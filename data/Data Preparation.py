@@ -70,7 +70,7 @@ sp500 = pd.read_csv('SPX.csv')[['Date', 'Close']].assign(Date=lambda cols: pd.to
     .rename(columns={'Close': 'SP500', 'Date': 'date'})
     
 # merge data
-macro = macro.merge(SP500, left_on='date', right_on='date', how='left')
+macro = macro.merge(sp500, left_on='date', right_on='date', how='left')
 
 # convert values to float type
 macro.loc[:, macro.columns != 'date'] = macro.loc[:, macro.columns != 'date'].astype('float')
@@ -138,5 +138,5 @@ cols = ['date', 'year', 'quarter', 'hosr', 'FEDFUNDS', 'MSPUS','GDPC1','PAYEMS',
 hosr_var = hosr_var[cols]
 
 # save to a csv file
-hosr_var.to_csv('hosr_var.csv')
+hosr_var.to_csv('hosr_var.csv',index=False)
 
