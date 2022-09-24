@@ -1,0 +1,65 @@
+---
+title: "R Notebook"
+output: html_document
+---
+```{r}
+setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
+print('Working directory reset to ../project')
+```
+The [R plugin](https://www.jetbrains.com/help/pycharm/r-plugin-support.html) for IntelliJ-based IDEs provides
+handy capabilities to work with the [R Markdown](https://www.jetbrains.com/help/pycharm/r-markdown.html) files.
+To [add](https://www.jetbrains.com/help/pycharm/r-markdown.html#add-code-chunk) a new R chunk,
+```{r}
+library(mgcv)
+library(lubridate)
+library(dplyr)
+library(xts)
+
+hosr_fpath <- "data/Homeownership Rate-1.csv"
+ir_fpath <- "data/Interest Rate.csv"
+msp_fpath <- "data/Median Sales Price of Houses Sold by Quarter.csv"
+gdp_fpath <- "data/Real GDP by Quarter.csv"
+
+hosr_df <- read.csv(hosr_fpath, skip=7)
+ir_df <- read.csv(ir_fpath)
+msp_df <- read.csv(msp_fpath)
+gdp_df <- read.csv(gdp_fpath)
+
+hosr_df <- na.omit(hosr_df)
+```
+```{r}
+hosr_ts <- ts(hosr_df$Value, start=1980, freq=4)
+ts.plot(hosr_ts)
+acf(hosr_ts, lag.max=50, main="")
+```
+```{r}
+ir_ts <- ts(ir_df$FEDFUNDS, start=1954, freq=12)
+ts.plot(ir_ts)
+acf(ir_ts, lag.max=50,main="")
+```
+```{r}
+library(zoo)
+
+ir_df$quarter <- as.yearqtr(ir_df$DATE, format='%Y-%m-%d')
+ir_df_qt <- aggregate(x = ir_df$FEDFUNDS, by = list(ir_df$quarter), FUN = mean)
+colnames(ir_df_qt) <- c("QUARTER", "FEDFUNDS")
+
+ir_qt_ts <- ts(ir_df_qt$FEDFUNDS, start=1954, freq=4)
+ts.plot(ir_qt_ts)
+acf(ir_qt_ts, lag.max=50,main="")
+```
+```{r}
+
+```
+```{r}
+msp_ts <- ts(msp_df$MSPUS, start=1963, freq=4)
+ts.plot(msp_ts)
+acf(msp_ts, lag.max=50,main="")
+```
+```{r}
+gdp_ts <- ts(gdp_df$GDPC1, start=1963, freq=4)
+ts.plot(gdp_ts)
+acf(gdp_ts, lag.max=50,main="")
+```
+Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
+Click the **Knit and Open Document** to build and preview an output.
