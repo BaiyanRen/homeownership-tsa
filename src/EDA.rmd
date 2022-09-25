@@ -1,0 +1,78 @@
+---
+title: "EDA"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
+```
+```{r}
+library(mgcv)
+library(lubridate)
+library(dplyr)
+library(xts)
+library(ggplot2)
+library(ggpubr)
+library(corrplot)
+```
+```{r}
+hosr_var_fpath <- "data/hosr_var.csv"
+hosr_fpath <- "data/Homeownership Rate-1.csv"
+ir_fpath <- "data/Interest Rate.csv"
+msp_fpath <- "data/Median Sales Price of Houses Sold by Quarter.csv"
+gdp_fpath <- "data/Real GDP by Quarter.csv"
+
+hosr_var_df <- read.csv(hosr_var_fpath)
+hosr_df <- read.csv(hosr_fpath, skip=7)
+ir_df <- read.csv(ir_fpath)
+msp_df <- read.csv(msp_fpath)
+gdp_df <- read.csv(gdp_fpath)
+
+hosr_df <- na.omit(hosr_df)
+```
+```{r}
+hosr_var_df$date <- as.Date(hosr_var_df$date)
+p1 <- ggplot(hosr_var_df,aes(date, hosr))+geom_line(color='blue') + labs(x = "") + labs(y = "HOSR") +
+         labs(title = 'Homeownership Rate')+theme(plot.title=element_text(face="bold",size=7))
+p2 <- ggplot(hosr_var_df,aes(date, FEDFUNDS))+geom_line(color='blue') + labs(x = "") + labs(y = "FEDFUNDS") +
+         labs(title = 'Interst Rate')+theme(plot.title=element_text(face="bold",size=7))
+p3 <- ggplot(hosr_var_df,aes(date, MSPUS))+geom_line(color='blue') + labs(x = "") + labs(y = "MSPUS") +
+         labs(title = 'Mean Sales Price')+theme(plot.title=element_text(face="bold",size=7))
+p4 <- ggplot(hosr_var_df,aes(date, GDPC1))+geom_line(color='blue') + labs(x = "") + labs(y = "GDPC1") +
+         labs(title = 'real GDP')+theme(plot.title=element_text(face="bold",size=7))
+p5 <- ggplot(hosr_var_df,aes(date, PAYEMS))+geom_line(color='blue') + labs(x = "") + labs(y = "PAYEMS") +
+         labs(title = 'Non Farm Payroll')+theme(plot.title=element_text(face="bold",size=7))
+p6 <- ggplot(hosr_var_df,aes(date, CPIAUCSL))+geom_line(color='blue') + labs(x = "") + labs(y = "CPIAUCSL") +
+         labs(title = 'CPI')+theme(plot.title=element_text(face="bold",size=7))
+p7 <- ggplot(hosr_var_df,aes(date, UNRATE))+geom_line(color='blue') + labs(x = "") + labs(y = "UNRATE") +
+         labs(title = 'Unemployment Rate')+theme(plot.title=element_text(face="bold",size=7))
+p8 <- ggplot(hosr_var_df,aes(date, DSPIC96))+geom_line(color='blue') + labs(x = "") + labs(y = "DSPIC96") +
+         labs(title = 'Disposable Personal Income')+theme(plot.title=element_text(face="bold",size=7))
+p9 <- ggplot(hosr_var_df,aes(date, PERMIT))+geom_line(color='blue') + labs(x = "") + labs(y = "PERMIT") +
+         labs(title = 'Housing Permit')+theme(plot.title=element_text(face="bold",size=7))
+p10 <- ggplot(hosr_var_df,aes(date, ICSA))+geom_line(color='blue') + labs(x = "") + labs(y = "ICSA") +
+         labs(title = 'Inital Claim')+theme(plot.title=element_text(face="bold",size=7))
+p11 <- ggplot(hosr_var_df,aes(date, SP500))+geom_line(color='blue') + labs(x = "") + labs(y = "SP500") +
+         labs(title = 'S&P 500 Index')+theme(plot.title=element_text(face="bold",size=7))
+
+ggarrange(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11, ncol=4, nrow = 3)
+```
+
+Type any R code in the chunk, for example:
+```{r}
+vars <- c("hosr","FEDFUNDS","MSPUS","GDPC1","PAYEMS","CPIAUCSL","UNRATE","UMCSENT","DSPIC96","PERMIT","ICSA","SP500")
+corrplot(cor(hosr_var_df[vars]), order = "AOE")
+```
+```{r}
+hosr_ts <- ts(hosr_df$Value, start=1980, freq=4)
+ts.plot(hosr_ts)
+acf(hosr_ts, lag.max=50, main="")
+```
+```{r}
+ts.plot(diff(hosr_ts))
+acf(diff(hosr_ts), lag.max=50, main="")
+```
+```{r}
+ggplot(hosr_var_df,aes(quarter,MSPUS))+geom_boxplot()
+```
