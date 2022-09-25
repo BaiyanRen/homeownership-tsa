@@ -1,0 +1,107 @@
+---
+title: "EDA"
+author: "Leon Chen"
+date: "9/24/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+if (!require(ggplot2)) install.packages('ggplot2')
+library(ggplot2)
+if (!require(ggpubr)) install.packages('ggpubr')
+library(ggpubr)
+if (!require(corrplot)) install.packages('corrplot')
+library(corrplot)
+```
+
+load data and convert to time series
+```{r}
+rm(list=ls())
+hosr <- read.csv("~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv")
+```
+
+data overview
+```{r}
+summary(hosr)
+```
+
+plot all variables over time
+
+```{r}
+hosr$date <- as.Date(hosr$date)
+p1 <- ggplot(hosr,aes(date, hosr))+geom_line(color='blue') + labs(x = "") + labs(y = "HOSR") +
+         labs(title = 'Homeownership Rate')+theme(plot.title=element_text(face="bold",size=7))
+p2 <- ggplot(hosr,aes(date, FEDFUNDS))+geom_line(color='blue') + labs(x = "") + labs(y = "FEDFUNDS") +
+         labs(title = 'Interst Rate')+theme(plot.title=element_text(face="bold",size=7))
+p3 <- ggplot(hosr,aes(date, MSPUS))+geom_line(color='blue') + labs(x = "") + labs(y = "MSPUS") +
+         labs(title = 'Mean Sales Price')+theme(plot.title=element_text(face="bold",size=7))
+p4 <- ggplot(hosr,aes(date, GDPC1))+geom_line(color='blue') + labs(x = "") + labs(y = "GDPC1") +
+         labs(title = 'real GDP')+theme(plot.title=element_text(face="bold",size=7))
+p5 <- ggplot(hosr,aes(date, PAYEMS))+geom_line(color='blue') + labs(x = "") + labs(y = "PAYEMS") +
+         labs(title = 'Non Farm Payroll')+theme(plot.title=element_text(face="bold",size=7))
+p6 <- ggplot(hosr,aes(date, CPIAUCSL))+geom_line(color='blue') + labs(x = "") + labs(y = "CPIAUCSL") +
+         labs(title = 'CPI')+theme(plot.title=element_text(face="bold",size=7))
+p7 <- ggplot(hosr,aes(date, UNRATE))+geom_line(color='blue') + labs(x = "") + labs(y = "UNRATE") +
+         labs(title = 'Unemployment Rate')+theme(plot.title=element_text(face="bold",size=7))
+p8 <- ggplot(hosr,aes(date, DSPIC96))+geom_line(color='blue') + labs(x = "") + labs(y = "DSPIC96") +
+         labs(title = 'Disposable Personal Income')+theme(plot.title=element_text(face="bold",size=7))
+p9 <- ggplot(hosr,aes(date, PERMIT))+geom_line(color='blue') + labs(x = "") + labs(y = "PERMIT") +
+         labs(title = 'Housing Permit')+theme(plot.title=element_text(face="bold",size=7))
+p10 <- ggplot(hosr,aes(date, ICSA))+geom_line(color='blue') + labs(x = "") + labs(y = "ICSA") +
+         labs(title = 'Inital Claim')+theme(plot.title=element_text(face="bold",size=7))
+p11 <- ggplot(hosr,aes(date, SP500))+geom_line(color='blue') + labs(x = "") + labs(y = "SP500") +
+         labs(title = 'S&P 500 Index')+theme(plot.title=element_text(face="bold",size=7))
+
+ggarrange(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11, ncol=4, nrow = 3)
+```
+Homeownership rate does not exhibit a clear trend over the time 1980 to 2021. Similar patterns we can also observe from Unemployment Rate and Housing permit. we can find there are many uptrend variables: mean sales price, real GDP, Non Farm Payroll, CPI, Disposable Personal Income and S&P 500 Index, as the world saw booming/inflating economy in last 40 years.
+
+As we are interested in the correlation between variable, here is the correlation plot:
+
+```{r}
+vars <- c("hosr","FEDFUNDS","MSPUS","GDPC1","PAYEMS","CPIAUCSL","UNRATE","UMCSENT","DSPIC96","PERMIT","ICSA","SP500")
+corrplot(cor(hosr[vars]), order = "AOE")
+```
+There are many highly correlated pairs. For example, GDPC1 and PAYEMS are positively correlated and FEDFUNDS is negatively correlated with CPIAUCSL.
+If we take a look at the dependent variable Homeownership rate. PAYEMS has a positive impact on the rate and FEDFUNDS does the opposite.
+
+
+Closer look at homeownership rate
+```{r}
+hist(hosr$hosr, main = "Homeownership Rate distribution from 1980 to 2021",
+    xlab = "Homeownership Rate",
+    breaks = 20, col="lightblue", ylim=c(0,40))
+
+boxplot(hosr$hosr, las = 1, horizontal = TRUE, main="Homeowership Boxplot")
+```
+
+Homeownership rate ranges from 63 to 69. we can see large portion of the observations falls in the range between 63.5 and 66
+
+
+time series study
+```{r}
+# convert to time series
+hosr_ts <- ts(hosr$hosr,start = 1980 , freq = 4)
+ts.plot(hosr_ts, col="blue",xlab="", ylab="Homeownship Rate", main = "Homeownship Rate over time")
+acf(hosr_ts, lag.max=12*4,xlab = "Lag", ylab = "ACF",main= "Homeowership rate ACF")
+```
+The time series plot exhibits heteroscedastcity and the rate has non-constant mean as there is slowly decay in ACF indicating a trend. as the variance of the values changes over time, the stationary assumption that the autocorrelation only depends on length of lags is also violated. However, no seasonality is observed. 
+
+As the values is not complied with stationary assumption, transformation is needed to manipulate the data
+
+Differencing the data
+```{r}
+ts.plot(diff(hosr_ts), col="blue",xlab="", ylab="Homeownship Rate", main = "Homeownship Rate over time")
+acf(diff(hosr_ts), lag.max=12*4,xlab = "Lag", ylab = "ACF",main= "Homeowership rate ACF")
+```
+
+The differenced data exhibits a constant mean and more stable variance overtime, even though there are some extreme data points at the end. All the ACF after lag 0 are within significant band, regardless of few points touching the blue dash line. So
+
+
+
+
+
