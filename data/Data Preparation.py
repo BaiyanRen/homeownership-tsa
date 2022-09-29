@@ -4,6 +4,7 @@ import requests
 import openpyxl
 import nasdaqdatalink
 import numpy as np
+import datetime
 
 # load the api key
 
@@ -79,7 +80,11 @@ macro.loc[:, macro.columns != 'date'] = macro.loc[:, macro.columns != 'date'].as
 macro_q = macro.groupby(pd.Grouper(key='date', freq='Q')).agg(np.nanmean).reset_index()
 
 # add one day to match project date
-macro_q["date"] = pd.DatetimeIndex(macro_q["date"])+pd.DateOffset(1)
+
+def get_quarter_first_date(date):
+  return(datetime.datetime(date.year,date.month-2,1))
+
+macro_q["date"] = macro_q["date"].apply(get_quarter_first_date)
 
 # change the format to YYYY-MM-DD as the project date
 macro_q["date"] = macro_q["date"].dt.strftime("%Y-%m-%d")
@@ -93,6 +98,15 @@ gdp = pd.read_csv("Real GDP by Quarter.csv")
 # rename the homeownership rate
 hosr.rename(columns = {"Value":"hosr"}, inplace=True)
 
+# conver interest rate to mean value
+ir["DATE"] = ir["DATE"].astype("datetime64[ns]")
+ir = ir.groupby(pd.Grouper(key="DATE",freq="Q")).agg(np.nanmean).reset_index()
+
+ir["DATE"] = ir["DATE"].apply(get_quarter_first_date)
+
+ir["DATE"] = ir["DATE"].dt.strftime("%Y-%m-%d")
+
+
 # merge project data
 project_data = ir.merge(msp, on="DATE")
 project_data = project_data.merge(gdp, on="DATE")
@@ -104,14 +118,12 @@ var = macro_q.merge(project_data, left_on = "date", right_on = "DATE")
 def convert_yq(dates):
   years = []
   quarters = []
-  quarter_dict={"04":"Q1","07":"Q2","10":"Q3","01":"Q4"}
+  quarter_dict={"01":"Q1","04":"Q2","07":"Q3","10":"Q4"}
 
   for date in dates:
     year = int(date.split("-")[0])
     quarter = quarter_dict[date.split("-")[1]]
     quarters.append(quarter)
-    if quarter == "Q4":
-      year = year -1
     years.append(year)
     
   return years, quarters
