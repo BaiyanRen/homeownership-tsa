@@ -5,7 +5,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
+setwd("~/Documents/GitHub/homeownership-tsa")
 ```
 ```{r}
 library(mgcv)
@@ -17,11 +17,11 @@ library(ggpubr)
 library(corrplot)
 ```
 ```{r}
-hosr_var_fpath <- "data/hosr_var.csv"
-hosr_fpath <- "data/Homeownership Rate-1.csv"
-ir_fpath <- "data/Interest Rate.csv"
-msp_fpath <- "data/Median Sales Price of Houses Sold by Quarter.csv"
-gdp_fpath <- "data/Real GDP by Quarter.csv"
+hosr_var_fpath <- "~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv"
+hosr_fpath <- "~/Documents/GitHub/homeownership-tsa/data/Homeownership Rate-1.csv"
+ir_fpath <- "~/Documents/GitHub/homeownership-tsa/data/Interest Rate.csv"
+msp_fpath <- "~/Documents/GitHub/homeownership-tsa/data/Median Sales Price of Houses Sold by Quarter.csv"
+gdp_fpath <- "~/Documents/GitHub/homeownership-tsa/data/Real GDP by Quarter.csv"
 
 hosr_var_df <- read.csv(hosr_var_fpath)
 hosr_df <- read.csv(hosr_fpath, skip=7)
