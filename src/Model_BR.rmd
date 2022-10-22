@@ -1,0 +1,53 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
+print('Working directory reset to ../project')
+```
+```{r}
+library(mgcv)
+library(lubridate)
+library(dplyr)
+library(xts)
+library(ggplot2)
+library(ggpubr)
+library(corrplot)
+library(dynlm)
+```
+```{r}
+hosr_var_fpath <- "data/hosr_var.csv"
+
+hosr_var_df <- read.csv(hosr_var_fpath)
+```
+```{r}
+time_points <- c(1:length(hosr_var_df$date))
+time_points <- c(time_points - min(time_points))/max(time_points)
+
+hosr_ts <- ts(hosr_var_df$hosr,start = 1980, frequency = 4)
+
+# Splines Trend Estimation
+gam_model <- gam(hosr_ts~s(time_points))
+gam_fit <- ts(fitted(gam_model),start=1980,frequency=4)
+
+# plot
+ts.plot(hosr_ts,xlab="",ylab="homeownership rate",main = "Trend Estimation with Benchmark model")
+lines(gam_fit,lwd=2,col="purple")
+
+legend("topleft", legend = c("Splines regression"), col = c("purple"), lwd = 2)
+```
+
+```{r}
+gam_resid <- hosr_ts-gam_fit
+
+par(mfrow=c(2,2))
+plot(gam_resid, ylab='Residuals',type='o',main="Residual Plot")
+abline(h=0)
+acf(gam_resid,main="ACF: Residuals")
+hist(gam_resid,xlab='Residuals',main='Histogram: Residuals')
+qqnorm(gam_resid,ylab="Sample Q",xlab="Theoretical Q")
+qqline(gam_resid)
+```
+The Splines regression model captures the non-linear trend of the homeownership rate data, though the peak during COVID-19 in 2020 is not fitted. The residuals of the model assemble normal distribution. Mean and variance of residuals are not constant due to the peak in 2020. ACF plot showed that the residuals are not stationary yet.
