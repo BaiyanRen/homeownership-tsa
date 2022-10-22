@@ -5,7 +5,13 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+<<<<<<< HEAD
 setwd("~/Documents/GitHub/homeownership-tsa")
+=======
+knitr::opts_chunk$set(fig.width = 8, fig.height = 4)
+# change the line of code below to be the location of the repo in your computer to run the file
+setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
+>>>>>>> ab337b6c70924810cf61a2fb0a0b36266a14d929
 ```
 ```{r}
 library(mgcv)
@@ -66,13 +72,22 @@ corrplot(cor(hosr_var_df[vars]), order = "AOE")
 ```
 ```{r}
 hosr_ts <- ts(hosr_df$Value, start=1980, freq=4)
-ts.plot(hosr_ts)
-acf(hosr_ts, lag.max=50, main="")
+ts.plot(hosr_ts, xlab="", ylab="Homeownship Rate", main = "Homeownship Rate over time")
+acf(hosr_ts, lag.max=12*4, xlab = "Lag", ylab = "ACF",main= "Homeowership rate ACF")
 ```
 ```{r}
-ts.plot(diff(hosr_ts))
-acf(diff(hosr_ts), lag.max=50, main="")
+ts.plot(diff(hosr_ts),xlab="", ylab="1-Differenced Homeownship Rate", main = "1-Differenced Homeownship Rate over time")
+acf(diff(hosr_ts), lag.max=12*4, xlab = "Lag", ylab = "ACF",main= "1-Differenced Homeowership rate ACF")
 ```
 ```{r}
-ggplot(hosr_var_df,aes(quarter,MSPUS))+geom_boxplot()
+p1<-ggplot(hosr_var_df,aes(quarter,MSPUS))+geom_boxplot()+ labs(y = "Median Sales Price of Houses") +
+         labs(x = 'Quarter')
+p2<-ggplot(hosr_var_df, aes(quarter, hosr))+geom_boxplot()+ labs(y = "Homeownership Rate") +
+         labs(x = 'Quarter')
+p3<-ggplot(hosr_var_df, aes(quarter, FEDFUNDS))+geom_boxplot()+ labs(y = "Interest Rate") +
+         labs(x = 'Quarter')
+p4<-ggplot(hosr_var_df, aes(quarter, GDPC1))+geom_boxplot()+ labs(y = "Real GDP") +
+         labs(x = 'Quarter')
+
+ggarrange(p1,p2,p3,p4, ncol=2, nrow = 2)
 ```
