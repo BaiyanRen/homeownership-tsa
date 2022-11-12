@@ -1,0 +1,153 @@
+---
+title: "Regularization and back forward"
+author: "Leon Chen"
+date: "11/12/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(glmnet)
+```
+read data
+
+```{r}
+rm(list=ls())
+hosr <- read.csv("~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv")
+hosr <- subset(hosr,select=c(-date,-year,-quarter))
+```
+
+stepwise variable selection
+
+```{r}
+hosr_lm0 <- lm(hosr~1,data = hosr)
+hosr_lm1 <- lm(hosr~.,data = hosr)
+```
+
+backforward
+
+```{r}
+backward <- step(hosr_lm1,scope = list(lower = hosr_lm0,upper = hosr_lm1),direction = "backward",k = log(NROW(hosr$hosr)),trace = 0)
+summary(backward)
+backward$anova
+```
+
+forward
+```{r}
+foward <- step(hosr_lm0,scope = list(lower = hosr_lm0,upper = hosr_lm1),direction = "forward",k = log(NROW(hosr$hosr)),trace = 0)
+summary(foward)
+foward$anova
+```
+
+
+both
+```{r}
+both <- step(hosr_lm0,scope = list(lower = hosr_lm0,upper = hosr_lm1),direction = "both",k = log(NROW(hosr$hosr)),trace = 0)
+summary(both)
+both$anova
+```
+
+lasso
+```{r}
+XP=data.matrix(hosr[,-1])
+YP=data.matrix(hosr$hosr)
+lasso=cv.glmnet(x=XP,y=YP,alpha=1,
+                nfolds = 5,type.measure="mse",family="gaussian")
+coef(lasso, s=lasso$lambda.min)
+print(lasso)
+
+lm_lasso <- lm(hosr~FEDFUNDS+MSPUS+GDPC1+PAYEMS+CPIAUCSL+UNRATE+UMCSENT+DSPIC96+PERMIT+ICSA+SP500,hosr)
+summary(lm_lasso)
+```
+
+
+----------scaled data --------------
+
+```{r}
+hosr_scaled <- as.data.frame(scale(hosr))
+```
+
+```{r}
+hosr_lm0_scaled <- lm(hosr~1,data = hosr_scaled)
+hosr_lm1_scaled <- lm(hosr~.,data = hosr_scaled)
+```
+
+backward
+```{r}
+backward <- step(hosr_lm1_scaled,scope = list(lower = hosr_lm0_scaled,upper = hosr_lm1_scaled),direction = "backward",k = log(NROW(hosr$hosr)),trace = 0)
+summary(backward)
+backward$anova
+```
+
+forward
+```{r}
+foward <- step(hosr_lm0_scaled,scope = list(lower = hosr_lm0_scaled,upper = hosr_lm1_scaled),direction = "forward",k = log(NROW(hosr$hosr)),trace = 0)
+summary(foward)
+foward$anova
+```
+
+both
+```{r}
+both <- step(hosr_lm0_scaled,scope = list(lower = hosr_lm0_scaled,upper = hosr_lm1_scaled),direction = "both",k = log(NROW(hosr$hosr)),trace = 0)
+summary(both)
+both$anova
+```
+
+lasso
+```{r}
+XP=data.matrix(hosr_scaled[,-1])
+YP=data.matrix(hosr_scaled$hosr)
+lasso_scaled=cv.glmnet(x=XP,y=YP,alpha=1,
+                nfolds = 5,type.measure="mse",family="gaussian")
+coef(lasso_scaled, s=lasso_scaled$lambda.min)
+print(lasso_scaled)
+```
+
+
+------log hosr --------
+
+```{r}
+hosr_log <- hosr
+hosr_log$hosr <- log(hosr$hosr)
+```
+
+```{r}
+hosr_lm0_log <- lm(hosr~1,data = hosr_log)
+hosr_lm1_log <- lm(hosr~.,data = hosr_log)
+```
+
+
+```{r}
+backward <- step(hosr_lm1_log,scope = list(lower = hosr_lm0_log,upper = hosr_lm1_log),direction = "backward",k = log(NROW(hosr$hosr)),trace = 0)
+summary(backward)
+backward$anova
+```
+
+forward
+```{r}
+foward <- step(hosr_lm0_log,scope = list(lower = hosr_lm0_log,upper = hosr_lm1_log),direction = "forward",k = log(NROW(hosr$hosr)),trace = 0)
+summary(foward)
+foward$anova
+```
+
+both
+```{r}
+both <- step(hosr_lm0_log,scope = list(lower = hosr_lm0_log,upper = hosr_lm1_log),direction = "both",k = log(NROW(hosr$hosr)),trace = 0)
+summary(both)
+both$anova
+```
+
+lasso
+```{r}
+XP=data.matrix(hosr_log[,-1])
+YP=data.matrix(hosr_log$hosr)
+lasso=cv.glmnet(x=XP,y=YP,alpha=1,
+                nfolds = 5,type.measure="mse",family="gaussian")
+coef(lasso, s=lasso$lambda.min)
+print(lasso)
+
+#lm_lasso <- lm(hosr~FEDFUNDS+MSPUS+GDPC1+PAYEMS+CPIAUCSL+UNRATE+UMCSENT+DSPIC96+PERMIT+ICSA+SP500,hosr)
+#summary(lm_lasso)
+```
