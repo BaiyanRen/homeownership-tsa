@@ -1,9 +1,29 @@
+---
+title: "MOdel_Zoe"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r setup, include = FALSE}
+
+# Set up the default parameters
+# 1. The code block will be shown in the document
+# 2. set up figure display size
+# 3. turn off all the warnings and messages
+
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width = 8, fig.height = 4)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+```
+
+```{r}
 library(tidyverse)
 library(modelr)
 library(lubridate)
 library(readxl)
-
-
 if (!require(ggplot2)) install.packages('ggplot2')
 library(ggplot2)
 if (!require(ggpubr)) install.packages('ggpubr')
@@ -23,10 +43,10 @@ time.pts = c(time.pts - min(time.pts))/max(time.pts)
 
 mav.fit = ksmooth(time.pts,hosr.ts, kernel = "box")
 hosr.fit.mav = ts(mav.fit$y,start=1980,frequency=4)
-
+```
 
 ##Fit a parametric quadraric polynomial
-
+```{r}
 x1 = time.pts
 x2 = time.pts^2
 para.model = lm(hosr.ts~x1+x2)
@@ -34,17 +54,17 @@ summary(para.model)
 para.fit = ts(fitted(para.model),start=1980,frequency=4)
 ts.plot(hosr.ts,ylab="House Owner Rate")
 lines(para.fit, lwd = 2,col = "orange")
-
+```
 # Residual and Residual ACF plots of the residuals from the fitted models
+```{r}
 diff.para <- hosr.ts - para.fit
 ts.plot(diff.para, xlab = "", ylab = "Residuals", main = "Parametric Quadratic Polynomial")
 acf(diff.para, lag.max = 52 * 4, xlab = "", ylab = "Residuals",main = "Parametric Quadratic Polynomial")
-
-
+```
 #Difference
 
+```{r}
 ts.plot(diff(hosr.ts), col = "black",main = "Differenced Home Owner Rate by Time")
-
 
 x1 <- time.pts[-1]
 x2 <- time.pts[-1]^2
@@ -52,3 +72,6 @@ para.model.diff<- lm(diff(hosr.ts) ~ x1 + x2)
 para.fit <- ts(fitted(para.model.diff), start =1980, frequency = 4)
 ts.plot(diff(hosr.ts),main = "Differenced Parametric Quadratic Polynomial Analysis")
 lines(para.fit, lwd = 2,col = "orange")
+acf(diff(hosr.ts))
+
+```
