@@ -1,0 +1,24 @@
+---
+title: "dynamic regression"
+author: "Leon Chen"
+date: "11/12/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+load package
+```{r}
+library(fpp2)
+```
+
+read data
+```{r}
+hosr <- read.csv("~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv")
+```
+
+```{r}
+(fit <- auto.arima(hosr[,"hosr"],xreg=hosr[,"FEDFUNDS"]))
+```
