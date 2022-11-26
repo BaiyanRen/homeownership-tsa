@@ -12,13 +12,259 @@ knitr::opts_chunk$set(echo = TRUE)
 load package
 ```{r}
 library(fpp2)
+library(TSA)
+library(aod)
+library(urca)
+library(tseries)
+library(mgcv)
+library(vars)
+library(aod)
 ```
 
 read data
 ```{r}
 hosr <- read.csv("~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv")
+n <- length(hosr$hosr)
+
+# set last 5 data points as testing
+training <- hosr[1:(n-5),]
+testing <- hosr[(n-4):n,]
 ```
 
 ```{r}
-(fit <- auto.arima(hosr[,"hosr"],xreg=hosr[,"FEDFUNDS"]))
+ts_hosr <-ts(hosr["hosr"],start = 1980, freq = 4)
+ts_fedfunds <-ts(hosr["FEDFUNDS"],start = 1980, freq = 4)
+ts_mspus <-ts(hosr["MSPUS"],start = 1980, freq = 4)
+ts_gdp <-ts(hosr["GDPC1"],start = 1980, freq = 4)
+ts_payem <-ts(hosr["PAYEMS"],start = 1980, freq = 4)
+ts_cpi <-ts(hosr["CPIAUCSL"],start = 1980, freq = 4)
+ts_unrate <-ts(hosr["UNRATE"],start = 1980, freq = 4)
+ts_umcsent <-ts(hosr["UMCSENT"],start = 1980, freq = 4)
+ts_dispic <-ts(hosr["DSPIC96"],start = 1980, freq = 4)
+ts_permit <-ts(hosr["PERMIT"],start = 1980, freq = 4)
+ts_icsa <-ts(hosr["ICSA"],start = 1980, freq = 4)
+ts_sp500 <-ts(hosr["SP500"],start = 1980, freq = 4)
 ```
+
+```{r}
+par(mfrow=c(3,2))
+plot(ts_hosr, type="l", main=paste("homeowership rate"),ylab="")
+plot(ts_fedfunds, type="l", main=paste("interet rate"),ylab="")
+plot(ts_mspus, type="l", main=paste("median housing price"),ylab="")
+plot(ts_gdp, type="l", main=paste("GDP"),ylab="")
+plot(ts_payem, type="l", main=paste("Non farm payroll"),ylab="")
+plot(ts_cpi, type="l", main=paste("CPI"),ylab="")
+plot(ts_unrate, type="l", main=paste("Unemployment rate"),ylab="")
+plot(ts_umcsent, type="l", main=paste("consumer sentiment"),ylab="")
+plot(ts_dispic, type="l", main=paste("Disposible income"),ylab="")
+plot(ts_permit, type="l", main=paste("Housing permit"),ylab="")
+plot(ts_icsa, type="l", main=paste("Jobless claim"),ylab="")
+plot(ts_sp500, type="l", main=paste("S&P 500"),ylab="")
+```
+Housing permit and consumer sentiment seems to have a very similar pattern as the home ownership rate, while interest rate might exhibit negative relationship with homeowership rate. Log transformation might be needed variables like Non farm payroll, median housing price for them to show more clear correlation with the target.
+
+##1st Order Time Series##
+
+```{r}
+par(mfrow=c(3,2))
+plot(diff(ts_hosr), type="l", main=paste("homeowership rate"),ylab="")
+plot(diff(ts_fedfunds), type="l", main=paste("interet rate"),ylab="")
+plot(diff(ts_mspus), type="l", main=paste("median housing price"),ylab="")
+plot(diff(ts_gdp), type="l", main=paste("GDP"),ylab="")
+plot(diff(ts_payem), type="l", main=paste("Non farm payroll"),ylab="")
+plot(diff(ts_cpi), type="l", main=paste("CPI"),ylab="")
+plot(diff(ts_unrate), type="l", main=paste("Unemployment rate"),ylab="")
+plot(diff(ts_umcsent), type="l", main=paste("consumer sentiment"),ylab="")
+plot(diff(ts_dispic), type="l", main=paste("Disposible income"),ylab="")
+plot(diff(ts_permit), type="l", main=paste("Housing permit"),ylab="")
+plot(diff(ts_icsa), type="l", main=paste("Jobless claim"),ylab="")
+plot(diff(ts_sp500), type="l", main=paste("S&P 500"),ylab="")
+```
+
+Trend Estimation + ARMA
+
+```{r}
+time.pts = c(1:length(training[,"hosr"]))
+time.pts = c(time.pts - min(time.pts))/max(time.pts)
+gam.fit.tr = gam(training[,"hosr"]~s(time.pts))
+hosr.fit.gam = fitted(gam.fit.tr)
+hosr.fit.gam = ts(hosr.fit.gam,start=1980, freq=4)
+resid.process = training[,"hosr"]-hosr.fit.gam
+resid.process = ts(resid.process,start=1980, freq=4)
+par(mfrow=c(2,2))
+plot(ts_hosr,xlab="Years",ylab="Home ownership rate",type="l")
+lines(hosr.fit.gam,lwd=2,col="blue")
+plot(resid.process,xlab="Years",ylab="De-Trended Time Series",type="l")
+acf(resid.process,main="ACF: De-trended TS")
+pacf(resid.process,main="PACF: De-trended TS")
+```
+## order selection  ---AICC
+
+```{r}
+n = length(resid.process)
+norder = 6
+
+aicc <- data.frame(Inf,Inf,Inf,Inf)
+names(aicc) <- c("p","d","q","aicc")
+
+test_arima <- function(train,p,d,q,n){
+  fit <-arima(train,order = c(p,d,q), method='ML')
+  curr.aicc <- fit$aic-2*(p+q+1)+2*(p+q+1)*n/(n-p-q-2)
+  df <- data.frame(p,d,q,curr.aicc)
+  names(df) <- c("p","d","q","aicc")
+  return(df)
+}
+
+for(p in 1:norder){
+  for(d in 0:1){
+    for(q in 1:norder){
+                aicc = rbind(aicc,test_arima(resid.process,p,d,q,n))
+   } 
+  }
+}
+
+aicc <- aicc[order(aicc$aicc),]
+m1.orders = c(aicc$p[1],aicc$d[1],aicc$q[1])
+
+```
+
+fit ARMA model
+
+```{r}
+final_model.1 = arima(resid.process,order = m1.orders, method='ML')
+resids.1 = resid(final_model.1)
+## Residual Analysis
+par (mfrow=c(2,2))
+plot(resids.1, ylab='Standardized Residuals')
+abline(h=0)
+acf(resids.1,main= 'ACF of the Model Residuals')
+pacf(resids.1,main='PACF of the Model Residuals')
+qqnorm(resids.1)
+qqline(resids.1)
+
+```
+
+The detrended time series shows that the trend has been removed. The ACF and PACF plots
+show also that it is plausible that the detrended time series is stationary.
+
+
+## ARIMA modeling m2
+
+```{r}
+n = length(training[,"hosr"])
+norder = 6
+
+aicc <- data.frame(Inf,Inf,Inf,Inf)
+names(aicc) <- c("p","d","q","aicc")
+
+for(p in 1:norder){
+  for(d in 0:1){
+    for(q in 1:norder){
+
+      possibleError <- tryCatch(
+          aicc <- rbind(aicc,test_arima(training[,"hosr"],p,d,q,n)),
+          error = function(e) e
+        )
+        if(inherits(possibleError,"error")) next
+   } 
+  }
+}
+
+aicc <- aicc[order(aicc$aicc),]
+m2.orders = c(aicc$p[1],aicc$d[1],aicc$q[1])
+
+```
+
+
+```{r}
+final_model.2 = arima(training[,"hosr"], order = m2.orders, method = "ML")
+resids.2 = resid(final_model.2)
+## Residual Analysis
+par (mfrow=c(2,2))
+plot(resids.2, ylab='Standardized Residuals')
+abline(h=0)
+acf(resids.2,main= 'ACF of the Model Residuals')
+pacf(resids.2,main='PACF of the Model Residuals')
+qqnorm(resids.2)
+qqline(resids.2)
+```
+
+## m3 var model
+
+```{r}
+n <-length(hosr$hosr)
+var_data_train <- cbind(ts_cpi,ts_dispic,ts_fedfunds,ts_gdp,
+                        ts_hosr,ts_icsa,ts_mspus,ts_payem,ts_permit,
+                        ts_sp500,ts_umcsent,ts_unrate)
+var_data_train <- var_data_train[1:(n-5),]
+
+VARselect(var_data_train, lag.max = 8)$selection
+
+```
+
+```{r}
+model.var=VAR(var_data_train, p=4)
+summary(model.var$varresult$ts_hosr)
+## Model Fitting: Restricted VAR
+model.var.restrict=restrict(model.var)  
+summary(model.var.restrict$varresult$ts_hosr)
+```
+
+Granger Causality: Wald test
+```{r}
+coef.hosr = coefficients(model.var)$ts_hosr[-(12*4+1),1]
+var.model = vcov(model.var)[197:244,197:244]
+## Granger Causality: CPI
+print("CPI")
+wald.test(b=coef.hosr, var.model, Terms=seq(1, 12*4, 12))
+
+## Granger Causality: disposible income
+print("disposible income")
+wald.test(b=coef.hosr, var.model, Terms=seq(2, 12*4, 12))
+
+## Granger Causality: interet rate
+print("interet rate")
+wald.test(b=coef.hosr, var.model, Terms=seq(3, 12*4, 12))
+
+## Granger Causality: gdp
+print("gdp")
+wald.test(b=coef.hosr, var.model, Terms=seq(4, 12*4, 12))
+
+## Granger Causality: innial claims
+print("innial claims")
+wald.test(b=coef.hosr, var.model, Terms=seq(6, 12*4, 12))
+
+
+## Granger Causality: median housing price
+print("median housing price")
+wald.test(b=coef.hosr, var.model, Terms=seq(7, 12*4, 12))
+
+## Granger Causality: non farm payroll
+print("non farm payroll")
+wald.test(b=coef.hosr, var.model, Terms=seq(8, 12*4, 12))
+
+
+## Granger Causality: housing permit
+print("housing permit")
+wald.test(b=coef.hosr, var.model, Terms=seq(9, 12*4, 12))
+
+
+## Granger Causality: sp500
+print("sp500")
+wald.test(b=coef.hosr, var.model, Terms=seq(10, 12*4, 12))
+
+
+## Granger Causality: consumer sentiments
+print("consumer sentiments")
+wald.test(b=coef.hosr, var.model, Terms=seq(11, 12*4, 12))
+
+## Granger Causality: unemployment rate
+print("unemployment rate")
+wald.test(b=coef.hosr, var.model, Terms=seq(12, 12*4, 12))
+
+```
+
+
+
+
+
