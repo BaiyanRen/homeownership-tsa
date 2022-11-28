@@ -18,13 +18,14 @@ library(urca)
 library(tseries)
 library(mgcv)
 library(vars)
-library(aod)
 library(lmtest)
 ```
 
 read data
 ```{r}
 hosr <- read.csv("~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv")
+# setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
+# hosr <- read.csv("data/hosr_var.csv")
 n <- length(hosr$hosr)
 
 # set last 15 data points as testing
@@ -381,7 +382,7 @@ wald.test(b=coef.hosr, var.model, Terms=seq(4, 4*2, 4))
 
 granger cause: initial jobless claim
 
-cointegration
+cointegration-By Leon
 
 ```{r}
 lm.cpi <- lm(ts_hosr~ts_cpi)
@@ -420,71 +421,110 @@ resid.lm.sp500 <- residuals(lm.sp500)
 resid.lm.umcsent <- residuals(lm.umcsent)
 resid.lm.unrate <- residuals(lm.unrate)
 
-adf.test(resid.lm.cpi)
-adf.test(resid.lm.dispic)
-adf.test(resid.lm.fedfunds)
-adf.test(resid.lm.gdp)
-adf.test(resid.lm.icsa)
+# adf.test(resid.lm.cpi)
+# adf.test(resid.lm.dispic)
+# adf.test(resid.lm.fedfunds)
+# adf.test(resid.lm.gdp)
 adf.test(resid.lm.mspus)
-adf.test(resid.lm.payem)
-adf.test(resid.lm.sp500)
-adf.test(resid.lm.umcsent)
-adf.test(resid.lm.unrate)
+adf.test(resid.lm.permit)
+adf.test(resid.lm.icsa)
+# adf.test(resid.lm.payem)
 
-co.resid.cpi <- ts_hosr-(coef.cpi[2]*ts_cpi+coef.cpi[1])
-summary(ur.df(co.resid.cpi, type="none",selectlags="BIC"))
-summary(ur.df(co.resid.cpi, type="drift",selectlags="BIC"))
-summary(ur.df(co.resid.cpi, type="trend",selectlags="BIC"))
+# adf.test(resid.lm.sp500)
+# adf.test(resid.lm.umcsent)
+# adf.test(resid.lm.unrate)
 
-co.resid.dispic <- ts_hosr-(coef.dispic[2]*ts_dispic+coef.dispic[1])
-summary(ur.df(co.resid.dispic, type="none",selectlags="BIC"))
-summary(ur.df(co.resid.dispic, type="drift",selectlags="BIC"))
-summary(ur.df(co.resid.dispic, type="trend",selectlags="BIC"))
+# co.resid.cpi <- ts_hosr-(coef.cpi[2]*ts_cpi+coef.cpi[1])
+# summary(ur.df(co.resid.cpi, type="none",selectlags="BIC"))
+# summary(ur.df(co.resid.cpi, type="drift",selectlags="BIC"))
+# summary(ur.df(co.resid.cpi, type="trend",selectlags="BIC"))
+#
+# co.resid.dispic <- ts_hosr-(coef.dispic[2]*ts_dispic+coef.dispic[1])
+# summary(ur.df(co.resid.dispic, type="none",selectlags="BIC"))
+# summary(ur.df(co.resid.dispic, type="drift",selectlags="BIC"))
+# summary(ur.df(co.resid.dispic, type="trend",selectlags="BIC"))
+#
+# co.resid.fedfunds <- ts_hosr-(coef.fedfunds[2]*ts_fedfunds+coef.fedfunds[1])
+# summary(ur.df(co.resid.fedfunds, type="none",selectlags="BIC"))
+# summary(ur.df(co.resid.fedfunds, type="drift",selectlags="BIC"))
+# summary(ur.df(co.resid.fedfunds, type="trend",selectlags="BIC"))
+#
+# co.resid.gdp <- ts_hosr-(coef.gdp[2]*ts_gdp+coef.gdp[1])
+# summary(ur.df(co.resid.gdp, type="none",selectlags="BIC"))
+# summary(ur.df(co.resid.gdp, type="drift",selectlags="BIC"))
+# summary(ur.df(co.resid.gdp, type="trend",selectlags="BIC"))
 
-co.resid.fedfunds <- ts_hosr-(coef.fedfunds[2]*ts_fedfunds+coef.fedfunds[1])
-summary(ur.df(co.resid.fedfunds, type="none",selectlags="BIC"))
-summary(ur.df(co.resid.fedfunds, type="drift",selectlags="BIC"))
-summary(ur.df(co.resid.fedfunds, type="trend",selectlags="BIC"))
 
-co.resid.gdp <- ts_hosr-(coef.gdp[2]*ts_gdp+coef.gdp[1])
-summary(ur.df(co.resid.gdp, type="none",selectlags="BIC"))
-summary(ur.df(co.resid.gdp, type="drift",selectlags="BIC"))
-summary(ur.df(co.resid.gdp, type="trend",selectlags="BIC"))
-
-co.resid.icsa <- ts_hosr-(coef.icsa[2]*ts_icsa+coef.icsa[1])
-summary(ur.df(co.resid.icsa, type="none",selectlags="BIC"))
-summary(ur.df(co.resid.icsa, type="drift",selectlags="BIC"))
-summary(ur.df(co.resid.icsa, type="trend",selectlags="BIC"))
 
 co.resid.mspus <- ts_hosr-(coef.mspus[2]*ts_mspus+coef.mspus[1])
 summary(ur.df(co.resid.mspus, type="none",selectlags="BIC"))
 summary(ur.df(co.resid.mspus, type="drift",selectlags="BIC"))
 summary(ur.df(co.resid.mspus, type="trend",selectlags="BIC"))
 
-co.resid.payem <- ts_hosr-(coef.payem[2]*ts_payem+coef.payem[1])
-summary(ur.df(co.resid.payem, type="none",selectlags="BIC"))
-summary(ur.df(co.resid.payem, type="drift",selectlags="BIC"))
-summary(ur.df(co.resid.payem, type="trend",selectlags="BIC"))
+# co.resid.payem <- ts_hosr-(coef.payem[2]*ts_payem+coef.payem[1])
+# summary(ur.df(co.resid.payem, type="none",selectlags="BIC"))
+# summary(ur.df(co.resid.payem, type="drift",selectlags="BIC"))
+# summary(ur.df(co.resid.payem, type="trend",selectlags="BIC"))
 
 co.resid.permit <- ts_hosr-(coef.permit[2]*ts_permit+coef.permit[1])
 summary(ur.df(co.resid.permit, type="none",selectlags="BIC"))
 summary(ur.df(co.resid.permit, type="drift",selectlags="BIC"))
 summary(ur.df(co.resid.permit, type="trend",selectlags="BIC"))
 
-co.resid.sp500 <- ts_hosr-(coef.sp500[2]*ts_sp500+coef.sp500[1])
-summary(ur.df(co.resid.sp500, type="none",selectlags="BIC"))
-summary(ur.df(co.resid.sp500, type="drift",selectlags="BIC"))
-summary(ur.df(co.resid.sp500, type="trend",selectlags="BIC"))
+co.resid.icsa <- ts_hosr-(coef.icsa[2]*ts_icsa+coef.icsa[1])
+summary(ur.df(co.resid.icsa, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.icsa, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.icsa, type="trend",selectlags="BIC"))
 
-co.resid.umcsent <- ts_hosr-(coef.umcsent[2]*ts_umcsent+coef.umcsent[1])
-summary(ur.df(co.resid.umcsent, type="none",selectlags="BIC"))
-summary(ur.df(co.resid.umcsent, type="drift",selectlags="BIC"))
-summary(ur.df(co.resid.umcsent, type="trend",selectlags="BIC"))
+# co.resid.sp500 <- ts_hosr-(coef.sp500[2]*ts_sp500+coef.sp500[1])
+# summary(ur.df(co.resid.sp500, type="none",selectlags="BIC"))
+# summary(ur.df(co.resid.sp500, type="drift",selectlags="BIC"))
+# summary(ur.df(co.resid.sp500, type="trend",selectlags="BIC"))
+#
+# co.resid.umcsent <- ts_hosr-(coef.umcsent[2]*ts_umcsent+coef.umcsent[1])
+# summary(ur.df(co.resid.umcsent, type="none",selectlags="BIC"))
+# summary(ur.df(co.resid.umcsent, type="drift",selectlags="BIC"))
+# summary(ur.df(co.resid.umcsent, type="trend",selectlags="BIC"))
+#
+# co.resid.unrate <- ts_hosr-(coef.unrate[2]*ts_unrate+coef.unrate[1])
+# summary(ur.df(co.resid.unrate, type="none",selectlags="BIC"))
+# summary(ur.df(co.resid.unrate, type="drift",selectlags="BIC"))
+# summary(ur.df(co.resid.unrate, type="trend",selectlags="BIC"))
+```
+cointegration-By Baiyan
+```{r}
+# original data - returns the same results as above
+lm.mspus <- lm(ts_hosr~ts_mspus)
+lm.permit <- lm(ts_hosr~ts_permit)
+lm.icsa <- lm(ts_hosr~ts_icsa)
+adf.test(residuals(lm.mspus))
+adf.test(residuals(lm.permit))
+adf.test(residuals(lm.icsa))
+summary(ur.df(residuals(lm.mspus), type="none", selectlags="BIC"))
+summary(ur.df(residuals(lm.mspus), type="drift", selectlags="BIC"))
+summary(ur.df(residuals(lm.mspus), type="trend", selectlags="BIC"))
+```
+```{r}
+# log transformed data - no cointegration detected
+lm.mspus_log <- lm(log(ts_hosr)~log(ts_mspus))
+lm.permit_log <- lm(log(ts_hosr)~log(ts_permit))
+lm.icsa_log <- lm(log(ts_hosr)~log(ts_icsa))
 
-co.resid.unrate <- ts_hosr-(coef.unrate[2]*ts_unrate+coef.unrate[1])
-summary(ur.df(co.resid.unrate, type="none",selectlags="BIC"))
-summary(ur.df(co.resid.unrate, type="drift",selectlags="BIC"))
-summary(ur.df(co.resid.unrate, type="trend",selectlags="BIC"))
+adf.test(residuals(lm.mspus_log))
+adf.test(residuals(lm.permit_log))
+adf.test(residuals(lm.icsa_log))
+
+summary(ur.df(residuals(lm.mspus_log), type="none", selectlags="BIC"))
+summary(ur.df(residuals(lm.mspus_log), type="drift", selectlags="BIC"))
+summary(ur.df(residuals(lm.mspus_log), type="trend", selectlags="BIC"))
+
+summary(ur.df(residuals(lm.permit_log), type="none", selectlags="BIC"))
+summary(ur.df(residuals(lm.permit_log), type="drift", selectlags="BIC"))
+summary(ur.df(residuals(lm.permit_log), type="trend", selectlags="BIC"))
+
+summary(ur.df(residuals(lm.icsa_log), type="none", selectlags="BIC"))
+summary(ur.df(residuals(lm.icsa_log), type="drift", selectlags="BIC"))
+summary(ur.df(residuals(lm.icsa_log), type="trend", selectlags="BIC"))
 ```
 
 
