@@ -19,6 +19,7 @@ library(tseries)
 library(mgcv)
 library(vars)
 library(aod)
+library(lmtest)
 ```
 
 read data
@@ -26,9 +27,9 @@ read data
 hosr <- read.csv("~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv")
 n <- length(hosr$hosr)
 
-# set last 5 data points as testing
-training <- hosr[1:(n-5),]
-testing <- hosr[(n-4):n,]
+# set last 15 data points as testing
+training <- hosr[1:(n-15),]
+testing <- hosr[(n-14):n,]
 ```
 
 ```{r}
@@ -81,12 +82,107 @@ plot(diff(ts_icsa), type="l", main=paste("Jobless claim"),ylab="")
 plot(diff(ts_sp500), type="l", main=paste("S&P 500"),ylab="")
 ```
 
+ACF and PACF
+
+```{r}
+data.ts = ts.union(ts_fedfunds,ts_gdp,ts_hosr)
+acf(data.ts,)
+pacf(data.ts,)
+
+data.ts = ts.union(ts_cpi,ts_dispic,ts_hosr)
+acf(data.ts,)
+pacf(data.ts,)
+
+data.ts = ts.union(ts_hosr,ts_icsa,ts_mspus,ts_payem)
+acf(data.ts,)
+pacf(data.ts,)
+
+data.ts = ts.union(ts_hosr,ts_permit,ts_sp500)
+acf(data.ts,)
+pacf(data.ts,)
+
+data.ts = ts.union(ts_hosr,ts_umcsent,ts_unrate)
+acf(data.ts,)
+pacf(data.ts,)
+
+```
+Granger Causality: Wald test
+
+```{r}
+var_data <- cbind(ts_hosr,ts_cpi,ts_dispic,ts_fedfunds,ts_gdp,ts_icsa,ts_mspus,ts_payem,ts_permit,ts_sp500,ts_umcsent,ts_unrate)
+VARselect(var_data, lag.max = 21)$selection
+```
+
+```{r}
+model.var=VAR(var_data, p=10)
+summary(model.var$varresult$ts_hosr)
+## Model Fitting: Restricted VAR
+model.var.restrict=restrict(model.var)  
+summary(model.var.restrict$varresult$ts_hosr)
+```
+
+```{r}
+coef.hosr = coefficients(model.var)$ts_hosr[-(12*10+1),1]
+var.model = vcov(model.var)[2:121,2:121]
+## Granger Causality: CPI
+print("CPI")
+wald.test(b=coef.hosr, var.model, Terms=seq(2, 12*10, 12))
+
+## Granger Causality: disposible income
+print("disposible income")
+wald.test(b=coef.hosr, var.model, Terms=seq(3, 12*10, 12))
+
+## Granger Causality: interet rate
+print("interet rate")
+wald.test(b=coef.hosr, var.model, Terms=seq(4, 12*10, 12))
+
+## Granger Causality: gdp
+print("gdp")
+wald.test(b=coef.hosr, var.model, Terms=seq(5, 12*10, 12))
+
+## Granger Causality: innial claims
+print("innial claims")
+wald.test(b=coef.hosr, var.model, Terms=seq(6, 12*10, 12))
+
+
+## Granger Causality: median housing price
+print("median housing price")
+wald.test(b=coef.hosr, var.model, Terms=seq(7, 12*10, 12))
+
+## Granger Causality: non farm payroll
+print("non farm payroll")
+wald.test(b=coef.hosr, var.model, Terms=seq(8, 12*10, 12))
+
+
+## Granger Causality: housing permit
+print("housing permit")
+wald.test(b=coef.hosr, var.model, Terms=seq(9, 12*10, 12))
+
+
+## Granger Causality: sp500
+print("sp500")
+wald.test(b=coef.hosr, var.model, Terms=seq(10, 12*10, 12))
+
+
+## Granger Causality: consumer sentiments
+print("consumer sentiments")
+wald.test(b=coef.hosr, var.model, Terms=seq(11, 12*10, 12))
+
+## Granger Causality: unemployment rate
+print("unemployment rate")
+wald.test(b=coef.hosr, var.model, Terms=seq(12, 12*10, 12))
+
+```
+
+
+
 Trend Estimation + ARMA
 
 ```{r}
-time.pts = c(1:length(training[,"hosr"]))
+time.pts = c(1:length(hosr[,"hosr"]))
 time.pts = c(time.pts - min(time.pts))/max(time.pts)
-gam.fit.tr = gam(training[,"hosr"]~s(time.pts))
+x <- time.pts[1:153]
+gam.fit.tr = gam(training[,"hosr"]~s(x))
 hosr.fit.gam = fitted(gam.fit.tr)
 hosr.fit.gam = ts(hosr.fit.gam,start=1980, freq=4)
 resid.process = training[,"hosr"]-hosr.fit.gam
@@ -193,76 +289,293 @@ qqline(resids.2)
 
 ```{r}
 n <-length(hosr$hosr)
-var_data_train <- cbind(ts_cpi,ts_dispic,ts_fedfunds,ts_gdp,
-                        ts_hosr,ts_icsa,ts_mspus,ts_payem,ts_permit,
+var_data_train <- cbind(ts_hosr,ts_cpi,ts_dispic,ts_fedfunds,ts_gdp,
+                        ts_icsa,ts_mspus,ts_payem,ts_permit,
                         ts_sp500,ts_umcsent,ts_unrate)
-var_data_train <- var_data_train[1:(n-5),]
+var_data_train <- var_data_train[1:(n-15),]
+```
 
-VARselect(var_data_train, lag.max = 8)$selection
+# granger causality test
+```{r}
+grangertest(ts_hosr ~ ts_cpi, order=1,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_cpi, order=3,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_cpi, order=4,data=data.frame(var_data_train))
+
+grangertest(ts_hosr ~ ts_dispic, order=1,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_dispic, order=3,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_dispic, order=4,data=data.frame(var_data_train))
+
+grangertest(ts_hosr ~ ts_fedfunds, order=1,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_fedfunds, order=3,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_fedfunds, order=4,data=data.frame(var_data_train))
+
+grangertest(ts_hosr ~ ts_gdp, order=1,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_gdp, order=3,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_gdp, order=4,data=data.frame(var_data_train))
+
+grangertest(ts_hosr ~ ts_icsa, order=1,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_icsa, order=3,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_icsa, order=4,data=data.frame(var_data_train))
+
+grangertest(ts_hosr ~ ts_mspus, order=1,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_mspus, order=3,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_mspus, order=4,data=data.frame(var_data_train))
+
+grangertest(ts_hosr ~ ts_payem, order=1,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_payem, order=3,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_payem, order=4,data=data.frame(var_data_train))
+
+grangertest(ts_hosr ~ ts_permit, order=1,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_permit, order=3,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_permit, order=4,data=data.frame(var_data_train))
+
+grangertest(ts_hosr ~ ts_sp500, order=1,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_sp500, order=3,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_sp500, order=4,data=data.frame(var_data_train))
+
+grangertest(ts_hosr ~ ts_umcsent, order=1,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_umcsent, order=3,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_umcsent, order=4,data=data.frame(var_data_train))
+
+grangertest(ts_hosr ~ ts_unrate, order=1,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_unrate, order=3,data=data.frame(var_data_train))
+grangertest(ts_hosr ~ ts_unrate, order=4,data=data.frame(var_data_train))
 
 ```
 
 ```{r}
-model.var=VAR(var_data_train, p=4)
+var_data_train <- cbind(ts_hosr,ts_permit,ts_umcsent,ts_unrate)
+var_data_train <- var_data_train[1:(n-15),]
+
+VARselect(var_data_train, lag.max = 20)$selection
+
+```
+
+```{r}
+model.var=VAR(var_data_train, p=2)
 summary(model.var$varresult$ts_hosr)
 ## Model Fitting: Restricted VAR
 model.var.restrict=restrict(model.var)  
 summary(model.var.restrict$varresult$ts_hosr)
 ```
 
-Granger Causality: Wald test
+granger test in the class
 ```{r}
-coef.hosr = coefficients(model.var)$ts_hosr[-(12*4+1),1]
-var.model = vcov(model.var)[197:244,197:244]
-## Granger Causality: CPI
-print("CPI")
-wald.test(b=coef.hosr, var.model, Terms=seq(1, 12*4, 12))
+coef.hosr = coefficients(model.var)$ts_hosr[-(4*2+1),1]
+var.model = vcov(model.var)[2:9,2:9]
+## Granger Causality: Permit
+print("permit")
+wald.test(b=coef.hosr, var.model, Terms=seq(2, 4*2, 4))
 
 ## Granger Causality: disposible income
-print("disposible income")
-wald.test(b=coef.hosr, var.model, Terms=seq(2, 12*4, 12))
+print("umscent")
+wald.test(b=coef.hosr, var.model, Terms=seq(3, 4*2, 4))
 
 ## Granger Causality: interet rate
-print("interet rate")
-wald.test(b=coef.hosr, var.model, Terms=seq(3, 12*4, 12))
-
-## Granger Causality: gdp
-print("gdp")
-wald.test(b=coef.hosr, var.model, Terms=seq(4, 12*4, 12))
-
-## Granger Causality: innial claims
-print("innial claims")
-wald.test(b=coef.hosr, var.model, Terms=seq(6, 12*4, 12))
+print("unrate")
+wald.test(b=coef.hosr, var.model, Terms=seq(4, 4*2, 4))
+```
 
 
-## Granger Causality: median housing price
-print("median housing price")
-wald.test(b=coef.hosr, var.model, Terms=seq(7, 12*4, 12))
-
-## Granger Causality: non farm payroll
-print("non farm payroll")
-wald.test(b=coef.hosr, var.model, Terms=seq(8, 12*4, 12))
 
 
-## Granger Causality: housing permit
-print("housing permit")
-wald.test(b=coef.hosr, var.model, Terms=seq(9, 12*4, 12))
+granger cause: initial jobless claim
+
+cointegration
+
+```{r}
+lm.cpi <- lm(ts_hosr~ts_cpi)
+lm.dispic <- lm(ts_hosr~ts_dispic)
+lm.fedfunds <- lm(ts_hosr~ts_fedfunds)
+lm.gdp <- lm(ts_hosr~ts_gdp)
+lm.icsa <- lm(ts_hosr~ts_icsa)
+lm.mspus <- lm(ts_hosr~ts_mspus)
+lm.payem <- lm(ts_hosr~ts_payem)
+lm.permit <- lm(ts_hosr~ts_permit)
+lm.sp500 <- lm(ts_hosr~ts_sp500)
+lm.umcsent <- lm(ts_hosr~ts_umcsent)
+lm.unrate <- lm(ts_hosr~ts_unrate)
+
+coef.cpi <- lm.cpi$coef
+coef.dispic <- lm.dispic$coef
+coef.fedfunds <- lm.fedfunds$coef
+coef.gdp <- lm.gdp$coef
+coef.icsa <- lm.icsa$coef
+coef.mspus <- lm.mspus$coef
+coef.payem <- lm.payem$coef
+coef.permit <- lm.permit$coef
+coef.sp500 <- lm.sp500$coef
+coef.umcsent <- lm.umcsent$coef
+coef.unrate <- lm.unrate$coef
+
+resid.lm.cpi <- residuals(lm.cpi)
+resid.lm.dispic <- residuals(lm.dispic)
+resid.lm.fedfunds <- residuals(lm.fedfunds)
+resid.lm.gdp <- residuals(lm.gdp)
+resid.lm.icsa <- residuals(lm.icsa)
+resid.lm.mspus <- residuals(lm.mspus)
+resid.lm.payem <- residuals(lm.payem)
+resid.lm.permit <- residuals(lm.permit)
+resid.lm.sp500 <- residuals(lm.sp500)
+resid.lm.umcsent <- residuals(lm.umcsent)
+resid.lm.unrate <- residuals(lm.unrate)
+
+adf.test(resid.lm.cpi)
+adf.test(resid.lm.dispic)
+adf.test(resid.lm.fedfunds)
+adf.test(resid.lm.gdp)
+adf.test(resid.lm.icsa)
+adf.test(resid.lm.mspus)
+adf.test(resid.lm.payem)
+adf.test(resid.lm.sp500)
+adf.test(resid.lm.umcsent)
+adf.test(resid.lm.unrate)
+
+co.resid.cpi <- ts_hosr-(coef.cpi[2]*ts_cpi+coef.cpi[1])
+summary(ur.df(co.resid.cpi, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.cpi, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.cpi, type="trend",selectlags="BIC"))
+
+co.resid.dispic <- ts_hosr-(coef.dispic[2]*ts_dispic+coef.dispic[1])
+summary(ur.df(co.resid.dispic, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.dispic, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.dispic, type="trend",selectlags="BIC"))
+
+co.resid.fedfunds <- ts_hosr-(coef.fedfunds[2]*ts_fedfunds+coef.fedfunds[1])
+summary(ur.df(co.resid.fedfunds, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.fedfunds, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.fedfunds, type="trend",selectlags="BIC"))
+
+co.resid.gdp <- ts_hosr-(coef.gdp[2]*ts_gdp+coef.gdp[1])
+summary(ur.df(co.resid.gdp, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.gdp, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.gdp, type="trend",selectlags="BIC"))
+
+co.resid.icsa <- ts_hosr-(coef.icsa[2]*ts_icsa+coef.icsa[1])
+summary(ur.df(co.resid.icsa, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.icsa, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.icsa, type="trend",selectlags="BIC"))
+
+co.resid.mspus <- ts_hosr-(coef.mspus[2]*ts_mspus+coef.mspus[1])
+summary(ur.df(co.resid.mspus, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.mspus, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.mspus, type="trend",selectlags="BIC"))
+
+co.resid.payem <- ts_hosr-(coef.payem[2]*ts_payem+coef.payem[1])
+summary(ur.df(co.resid.payem, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.payem, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.payem, type="trend",selectlags="BIC"))
+
+co.resid.permit <- ts_hosr-(coef.permit[2]*ts_permit+coef.permit[1])
+summary(ur.df(co.resid.permit, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.permit, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.permit, type="trend",selectlags="BIC"))
+
+co.resid.sp500 <- ts_hosr-(coef.sp500[2]*ts_sp500+coef.sp500[1])
+summary(ur.df(co.resid.sp500, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.sp500, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.sp500, type="trend",selectlags="BIC"))
+
+co.resid.umcsent <- ts_hosr-(coef.umcsent[2]*ts_umcsent+coef.umcsent[1])
+summary(ur.df(co.resid.umcsent, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.umcsent, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.umcsent, type="trend",selectlags="BIC"))
+
+co.resid.unrate <- ts_hosr-(coef.unrate[2]*ts_unrate+coef.unrate[1])
+summary(ur.df(co.resid.unrate, type="none",selectlags="BIC"))
+summary(ur.df(co.resid.unrate, type="drift",selectlags="BIC"))
+summary(ur.df(co.resid.unrate, type="trend",selectlags="BIC"))
+```
 
 
-## Granger Causality: sp500
-print("sp500")
-wald.test(b=coef.hosr, var.model, Terms=seq(10, 12*4, 12))
+## m4 varx
 
-
-## Granger Causality: consumer sentiments
-print("consumer sentiments")
-wald.test(b=coef.hosr, var.model, Terms=seq(11, 12*4, 12))
-
-## Granger Causality: unemployment rate
-print("unemployment rate")
-wald.test(b=coef.hosr, var.model, Terms=seq(12, 12*4, 12))
+```{r}
+##Model Selection
+VARselect(cbind(ts_hosr[1:153],ts_permit[1:153]), lag.max = 20,exogen=data.frame(ts_umcsent[1:153],ts_unrate[1:153]))$selection
 
 ```
+
+```{r}
+## Model Fitting: Unrestricted VAR
+model.var2=VAR(cbind(ts_hosr[1:153],ts_permit[1:153]), p=1,exogen=data.frame(umcsent=ts_umcsent[1:153],unrate=ts_unrate[1:153]))
+summary(model.var2)
+
+## Model Fitting: Restricted VAR
+model.var.restrict2=restrict(model.var2)  
+summary(model.var.restrict2)
+```
+
+
+## prediction
+
+m1
+```{r}
+nfit = 153
+
+newdata = data.frame(x=time.pts[(nfit+1):n])
+gam.pred= predict(gam.fit.tr,newdata = newdata,interval=c("prediction"))
+
+outpredresid = predict(final_model.1,n.ahead=15)$pred
+## Add up the predictions
+final.pred.1 = outpredresid+gam.pred
+```
+
+m2
+```{r}
+final.pred.2 = predict(final_model.2,n.ahead=15)$pred
+```
+
+m3
+
+```{r}
+final.pred.3a = predict(model.var,n.ahead=15)$fcst$ts_hosr
+final.pred.3b = predict(model.var.restrict,n.ahead=15)$fcst$ts_hosr
+```
+
+m4
+
+```{r}
+x = data.frame(umcsent=ts_umcsent[154:168],unrate=ts_unrate[154:168])
+final.pred.4a = predict(model.var2,n.ahead=15,dumvar=x)$fcst$y1
+final.pred.4b = predict(model.var.restrict2,n.ahead=15,dumvar=x)$fcst$y1
+```
+
+plot
+
+```{r}
+ts.plot(ts_hosr,main="All Forecasts",ylab="homeownership rate",ylim=c(62,69))
+points(final.pred.1,lwd=2,col="red")
+points(ts(final.pred.2,start=2018.25,freq=4),lwd=2,col="orange")
+points(ts(final.pred.3a[,1],start=2018.25,freq=4),lwd=2,col="blue")
+points(ts(final.pred.3b[,1],start=2018.25,freq=4),lwd=2,col="lightblue")
+points(ts(final.pred.4a[,1],start=2018.25,freq=4),lwd=2,col="darkgreen")
+points(ts(final.pred.4b[,1],start=2018.25,freq=4),lwd=2,col="green")
+legend(x=1980,y=69,legend=c("model1","model2","model3a","model3b","model4a","model4b"),pch=1,
+       pt.lwd = 2, col=c("red","orange","blue","lightblue","darkgreen","green"))
+```
+PM, MAPE
+
+```{r}
+testing$hosr
+cat("Model1 MAPE:",mean(abs(final.pred.1-testing$hosr)/testing$hosr),
+   "\nModel1 PM:", sum((final.pred.1-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2),
+"\nModel2 MAPE:",mean(abs(final.pred.2-testing$hosr)/testing$hosr),
+"\nModel2 PM:", sum((final.pred.2-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2),
+"\nModel3a MAPE:",mean(abs(final.pred.3a-testing$hosr)/testing$hosr),
+"\nModel3a PM:", sum((final.pred.3a-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2),
+"\nModel3b MAPE:",mean(abs(final.pred.3b-testing$hosr)/testing$hosr),
+"\nModel3b PM:", sum((final.pred.3b-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2),
+"\nModel4a MAPE:",mean(abs(final.pred.4a-testing$hosr)/testing$hosr),
+"\nModel4a PM:", sum((final.pred.4a-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2),
+"\nModel4b MAPE:",mean(abs(final.pred.4b-testing$hosr)/testing$hosr),
+"\nModel4b PM:", sum((final.pred.4b-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2))
+```
+
+
+
+
+
 
 
 
