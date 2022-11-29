@@ -27,10 +27,15 @@ hosr <- read.csv("~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv")
 # setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
 # hosr <- read.csv("data/hosr_var.csv")
 n <- length(hosr$hosr)
+hosr_log <- log(subset(hosr,select = -c(year,date,quarter)))
 
 # set last 15 data points as testing
 training <- hosr[1:(n-15),]
 testing <- hosr[(n-14):n,]
+
+# log transformation
+training_log <- hosr_log[1:(n-15),]
+testing_log <- hosr_log[(n-14):n,]
 ```
 
 ```{r}
@@ -46,6 +51,19 @@ ts_dispic <-ts(hosr["DSPIC96"],start = 1980, freq = 4)
 ts_permit <-ts(hosr["PERMIT"],start = 1980, freq = 4)
 ts_icsa <-ts(hosr["ICSA"],start = 1980, freq = 4)
 ts_sp500 <-ts(hosr["SP500"],start = 1980, freq = 4)
+
+ts_hosr_log <-ts(hosr_log["hosr"],start = 1980, freq = 4)
+ts_fedfunds_log <-ts(hosr_log["FEDFUNDS"],start = 1980, freq = 4)
+ts_mspus_log <-ts(hosr_log["MSPUS"],start = 1980, freq = 4)
+ts_gdp_log <-ts(hosr_log["GDPC1"],start = 1980, freq = 4)
+ts_payem_log <-ts(hosr_log["PAYEMS"],start = 1980, freq = 4)
+ts_cpi_log <-ts(hosr_log["CPIAUCSL"],start = 1980, freq = 4)
+ts_unrate_log <-ts(hosr_log["UNRATE"],start = 1980, freq = 4)
+ts_umcsent_log <-ts(hosr_log["UMCSENT"],start = 1980, freq = 4)
+ts_dispic_log <-ts(hosr_log["DSPIC96"],start = 1980, freq = 4)
+ts_permit_log <-ts(hosr_log["PERMIT"],start = 1980, freq = 4)
+ts_icsa_log <-ts(hosr_log["ICSA"],start = 1980, freq = 4)
+ts_sp500_log <-ts(hosr_log["SP500"],start = 1980, freq = 4)
 ```
 
 ```{r}
@@ -86,25 +104,20 @@ plot(diff(ts_sp500), type="l", main=paste("S&P 500"),ylab="")
 ACF and PACF
 
 ```{r}
-data.ts = ts.union(ts_fedfunds,ts_gdp,ts_hosr)
-acf(data.ts,)
-pacf(data.ts,)
+data.ts = ts.union(ts_fedfunds,ts_hosr,ts_gdp)
+plot(acf(data.ts,plot=FALSE),mar=c(3.5,3,1.9,0))
 
 data.ts = ts.union(ts_cpi,ts_dispic,ts_hosr)
-acf(data.ts,)
-pacf(data.ts,)
+plot(acf(data.ts,plot=FALSE),mar=c(3.5,3,1.9,0))
 
 data.ts = ts.union(ts_hosr,ts_icsa,ts_mspus,ts_payem)
-acf(data.ts,)
-pacf(data.ts,)
+plot(acf(data.ts,plot=FALSE),mar=c(3.5,3,1.9,0))
 
 data.ts = ts.union(ts_hosr,ts_permit,ts_sp500)
-acf(data.ts,)
-pacf(data.ts,)
+plot(acf(data.ts,plot=FALSE),mar=c(3.5,3,1.9,0))
 
 data.ts = ts.union(ts_hosr,ts_umcsent,ts_unrate)
-acf(data.ts,)
-pacf(data.ts,)
+plot(acf(data.ts,plot=FALSE),mar=c(3.5,3,1.9,0))
 
 ```
 Granger Causality: Wald test
@@ -175,212 +188,75 @@ wald.test(b=coef.hosr, var.model, Terms=seq(12, 12*10, 12))
 
 ```
 
-
-
-Trend Estimation + ARMA
+granger causality test on log
 
 ```{r}
-time.pts = c(1:length(hosr[,"hosr"]))
-time.pts = c(time.pts - min(time.pts))/max(time.pts)
-x <- time.pts[1:153]
-gam.fit.tr = gam(training[,"hosr"]~s(x))
-hosr.fit.gam = fitted(gam.fit.tr)
-hosr.fit.gam = ts(hosr.fit.gam,start=1980, freq=4)
-resid.process = training[,"hosr"]-hosr.fit.gam
-resid.process = ts(resid.process,start=1980, freq=4)
-par(mfrow=c(2,2))
-plot(ts_hosr,xlab="Years",ylab="Home ownership rate",type="l")
-lines(hosr.fit.gam,lwd=2,col="blue")
-plot(resid.process,xlab="Years",ylab="De-Trended Time Series",type="l")
-acf(resid.process,main="ACF: De-trended TS")
-pacf(resid.process,main="PACF: De-trended TS")
-```
-## order selection  ---AICC
-
-```{r}
-n = length(resid.process)
-norder = 6
-
-aicc <- data.frame(Inf,Inf,Inf,Inf)
-names(aicc) <- c("p","d","q","aicc")
-
-test_arima <- function(train,p,d,q,n){
-  fit <-arima(train,order = c(p,d,q), method='ML')
-  curr.aicc <- fit$aic-2*(p+q+1)+2*(p+q+1)*n/(n-p-q-2)
-  df <- data.frame(p,d,q,curr.aicc)
-  names(df) <- c("p","d","q","aicc")
-  return(df)
-}
-
-for(p in 1:norder){
-  for(d in 0:1){
-    for(q in 1:norder){
-                aicc = rbind(aicc,test_arima(resid.process,p,d,q,n))
-   } 
-  }
-}
-
-aicc <- aicc[order(aicc$aicc),]
-m1.orders = c(aicc$p[1],aicc$d[1],aicc$q[1])
-
-```
-
-fit ARMA model
-
-```{r}
-final_model.1 = arima(resid.process,order = m1.orders, method='ML')
-resids.1 = resid(final_model.1)
-## Residual Analysis
-par (mfrow=c(2,2))
-plot(resids.1, ylab='Standardized Residuals')
-abline(h=0)
-acf(resids.1,main= 'ACF of the Model Residuals')
-pacf(resids.1,main='PACF of the Model Residuals')
-qqnorm(resids.1)
-qqline(resids.1)
-
-```
-
-The detrended time series shows that the trend has been removed. The ACF and PACF plots
-show also that it is plausible that the detrended time series is stationary.
-
-
-## ARIMA modeling m2
-
-```{r}
-n = length(training[,"hosr"])
-norder = 6
-
-aicc <- data.frame(Inf,Inf,Inf,Inf)
-names(aicc) <- c("p","d","q","aicc")
-
-for(p in 1:norder){
-  for(d in 0:1){
-    for(q in 1:norder){
-
-      possibleError <- tryCatch(
-          aicc <- rbind(aicc,test_arima(training[,"hosr"],p,d,q,n)),
-          error = function(e) e
-        )
-        if(inherits(possibleError,"error")) next
-   } 
-  }
-}
-
-aicc <- aicc[order(aicc$aicc),]
-m2.orders = c(aicc$p[1],aicc$d[1],aicc$q[1])
-
-```
-
-
-```{r}
-final_model.2 = arima(training[,"hosr"], order = m2.orders, method = "ML")
-resids.2 = resid(final_model.2)
-## Residual Analysis
-par (mfrow=c(2,2))
-plot(resids.2, ylab='Standardized Residuals')
-abline(h=0)
-acf(resids.2,main= 'ACF of the Model Residuals')
-pacf(resids.2,main='PACF of the Model Residuals')
-qqnorm(resids.2)
-qqline(resids.2)
-```
-
-## m3 var model
-
-```{r}
-n <-length(hosr$hosr)
-var_data_train <- cbind(ts_hosr,ts_cpi,ts_dispic,ts_fedfunds,ts_gdp,
-                        ts_icsa,ts_mspus,ts_payem,ts_permit,
-                        ts_sp500,ts_umcsent,ts_unrate)
-var_data_train <- var_data_train[1:(n-15),]
-```
-
-# granger causality test
-```{r}
-grangertest(ts_hosr ~ ts_cpi, order=1,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_cpi, order=3,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_cpi, order=4,data=data.frame(var_data_train))
-
-grangertest(ts_hosr ~ ts_dispic, order=1,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_dispic, order=3,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_dispic, order=4,data=data.frame(var_data_train))
-
-grangertest(ts_hosr ~ ts_fedfunds, order=1,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_fedfunds, order=3,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_fedfunds, order=4,data=data.frame(var_data_train))
-
-grangertest(ts_hosr ~ ts_gdp, order=1,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_gdp, order=3,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_gdp, order=4,data=data.frame(var_data_train))
-
-grangertest(ts_hosr ~ ts_icsa, order=1,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_icsa, order=3,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_icsa, order=4,data=data.frame(var_data_train))
-
-grangertest(ts_hosr ~ ts_mspus, order=1,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_mspus, order=3,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_mspus, order=4,data=data.frame(var_data_train))
-
-grangertest(ts_hosr ~ ts_payem, order=1,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_payem, order=3,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_payem, order=4,data=data.frame(var_data_train))
-
-grangertest(ts_hosr ~ ts_permit, order=1,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_permit, order=3,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_permit, order=4,data=data.frame(var_data_train))
-
-grangertest(ts_hosr ~ ts_sp500, order=1,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_sp500, order=3,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_sp500, order=4,data=data.frame(var_data_train))
-
-grangertest(ts_hosr ~ ts_umcsent, order=1,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_umcsent, order=3,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_umcsent, order=4,data=data.frame(var_data_train))
-
-grangertest(ts_hosr ~ ts_unrate, order=1,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_unrate, order=3,data=data.frame(var_data_train))
-grangertest(ts_hosr ~ ts_unrate, order=4,data=data.frame(var_data_train))
-
+var_data <- cbind(ts_hosr_log,ts_cpi_log,ts_dispic_log,ts_fedfunds_log,ts_gdp_log,
+                  ts_icsa_log,ts_mspus_log,ts_payem_log,ts_permit_log,ts_sp500_log,ts_umcsent_log,ts_unrate_log)
+VARselect(var_data, lag.max = 21)$selection
 ```
 
 ```{r}
-var_data_train <- cbind(ts_hosr,ts_permit,ts_umcsent,ts_unrate)
-var_data_train <- var_data_train[1:(n-15),]
-
-VARselect(var_data_train, lag.max = 20)$selection
-
-```
-
-```{r}
-model.var=VAR(var_data_train, p=2)
+model.var=VAR(var_data, p=10)
 summary(model.var$varresult$ts_hosr)
 ## Model Fitting: Restricted VAR
 model.var.restrict=restrict(model.var)  
 summary(model.var.restrict$varresult$ts_hosr)
 ```
 
-granger test in the class
 ```{r}
-coef.hosr = coefficients(model.var)$ts_hosr[-(4*2+1),1]
-var.model = vcov(model.var)[2:9,2:9]
-## Granger Causality: Permit
-print("permit")
-wald.test(b=coef.hosr, var.model, Terms=seq(2, 4*2, 4))
+coef.hosr = coefficients(model.var)$ts_hosr[-(12*10+1),1]
+var.model = vcov(model.var)[2:121,2:121]
+## Granger Causality: CPI
+print("CPI")
+wald.test(b=coef.hosr, var.model, Terms=seq(2, 12*10, 12))
 
 ## Granger Causality: disposible income
-print("umscent")
-wald.test(b=coef.hosr, var.model, Terms=seq(3, 4*2, 4))
+print("disposible income")
+wald.test(b=coef.hosr, var.model, Terms=seq(3, 12*10, 12))
 
 ## Granger Causality: interet rate
-print("unrate")
-wald.test(b=coef.hosr, var.model, Terms=seq(4, 4*2, 4))
+print("interet rate")
+wald.test(b=coef.hosr, var.model, Terms=seq(4, 12*10, 12))
+
+## Granger Causality: gdp
+print("gdp")
+wald.test(b=coef.hosr, var.model, Terms=seq(5, 12*10, 12))
+
+## Granger Causality: innial claims
+print("innial claims")
+wald.test(b=coef.hosr, var.model, Terms=seq(6, 12*10, 12))
+
+
+## Granger Causality: median housing price
+print("median housing price")
+wald.test(b=coef.hosr, var.model, Terms=seq(7, 12*10, 12))
+
+## Granger Causality: non farm payroll
+print("non farm payroll")
+wald.test(b=coef.hosr, var.model, Terms=seq(8, 12*10, 12))
+
+
+## Granger Causality: housing permit
+print("housing permit")
+wald.test(b=coef.hosr, var.model, Terms=seq(9, 12*10, 12))
+
+
+## Granger Causality: sp500
+print("sp500")
+wald.test(b=coef.hosr, var.model, Terms=seq(10, 12*10, 12))
+
+
+## Granger Causality: consumer sentiments
+print("consumer sentiments")
+wald.test(b=coef.hosr, var.model, Terms=seq(11, 12*10, 12))
+
+## Granger Causality: unemployment rate
+print("unemployment rate")
+wald.test(b=coef.hosr, var.model, Terms=seq(12, 12*10, 12))
+
 ```
 
-
-
-
-granger cause: initial jobless claim
 
 cointegration-By Leon
 
@@ -527,23 +403,337 @@ summary(ur.df(residuals(lm.icsa_log), type="drift", selectlags="BIC"))
 summary(ur.df(residuals(lm.icsa_log), type="trend", selectlags="BIC"))
 ```
 
+Trend Estimation + ARMA org
 
-## m4 varx
+```{r}
+time.pts = c(1:length(hosr[,"hosr"]))
+time.pts = c(time.pts - min(time.pts))/max(time.pts)
+x <- time.pts[1:153]
+m_spl_org = gam(training[,"hosr"]~s(x))
+m_spl_org.fit = fitted(m_spl_arma_org)
+m_spl_org.fit = ts(m_spl_org.fit,start=1980, freq=4)
+resid.process = training[,"hosr"]-m_spl_org.fit
+resid.process = ts(resid.process,start=1980, freq=4)
+par(mfrow=c(2,2))
+plot(ts_hosr,xlab="Years",ylab="Home ownership rate",type="l")
+lines(m_spl_org.fit,lwd=2,col="blue")
+plot(resid.process,xlab="Years",ylab="De-Trended Time Series",type="l")
+acf(resid.process,main="ACF: De-trended TS")
+pacf(resid.process,main="PACF: De-trended TS")
+```
+## order selection  ---AICC
+
+```{r}
+n = length(resid.process)
+norder = 6
+
+aicc <- data.frame(Inf,Inf,Inf,Inf)
+names(aicc) <- c("p","d","q","aicc")
+
+test_arima <- function(train,p,d,q,n){
+  fit <-arima(train,order = c(p,d,q), method='ML')
+  curr.aicc <- fit$aic-2*(p+q+1)+2*(p+q+1)*n/(n-p-q-2)
+  df <- data.frame(p,d,q,curr.aicc)
+  names(df) <- c("p","d","q","aicc")
+  return(df)
+}
+
+for(p in 1:norder){
+  for(d in 0:1){
+    for(q in 1:norder){
+                aicc = rbind(aicc,test_arima(resid.process,p,d,q,n))
+   } 
+  }
+}
+
+aicc <- aicc[order(aicc$aicc),]
+m1.orders = c(aicc$p[1],aicc$d[1],aicc$q[1])
+
+```
+
+fit ARMA model
+
+```{r}
+m_arma_org = arima(resid.process,order = m1.orders, method='ML')
+m_arma_org.res = resid(m_arma_org)
+## Residual Analysis
+par (mfrow=c(2,2))
+plot(m_arma_org.res, ylab='Standardized Residuals')
+abline(h=0)
+acf(m_arma_org.res,main= 'ACF of the Model Residuals')
+pacf(m_arma_org.res,main='PACF of the Model Residuals')
+qqnorm(m_arma_org.res)
+qqline(m_arma_org.res)
+```
+The de-trended time series shows that the trend has been removed. the residuals are normally distributed. The ACF and PACF plots
+show also that it is plausible that the de-trended time series is stationary.
+
+
+trend estimation and ARMA log
+
+```{r}
+time.pts = c(1:length(hosr_log[,"hosr"]))
+time.pts = c(time.pts - min(time.pts))/max(time.pts)
+x <- time.pts[1:153]
+m_spl_log = gam(training_log[,"hosr"]~s(x))
+m_spl_log.fit = fitted(m_spl_log)
+m_spl_log.fit = ts(m_spl_log.fit,start=1980, freq=4)
+resid.process = training_log[,"hosr"]-m_spl_log.fit
+resid.process = ts(resid.process,start=1980, freq=4)
+par(mfrow=c(2,2))
+plot(ts_hosr_log,xlab="Years",ylab="Home ownership rate",type="l")
+lines(m_spl_log.fit,lwd=2,col="blue")
+plot(resid.process,xlab="Years",ylab="De-Trended Time Series",type="l")
+acf(resid.process,main="ACF: De-trended TS")
+pacf(resid.process,main="PACF: De-trended TS")
+```
+```{r}
+n = length(resid.process)
+norder = 6
+
+aicc <- data.frame(Inf,Inf,Inf,Inf)
+names(aicc) <- c("p","d","q","aicc")
+
+test_arima <- function(train,p,d,q,n){
+  fit <-arima(train,order = c(p,d,q), method='ML')
+  curr.aicc <- fit$aic-2*(p+q+1)+2*(p+q+1)*n/(n-p-q-2)
+  df <- data.frame(p,d,q,curr.aicc)
+  names(df) <- c("p","d","q","aicc")
+  return(df)
+}
+
+for(p in 1:norder){
+  for(d in 0:1){
+    for(q in 1:norder){
+                aicc = rbind(aicc,test_arima(resid.process,p,d,q,n))
+   } 
+  }
+}
+
+aicc <- aicc[order(aicc$aicc),]
+m1.orders = c(aicc$p[1],aicc$d[1],aicc$q[1])
+
+```
+
+fit ARMA model log
+
+```{r}
+m_arma_log = arima(resid.process,order = m1.orders, method='ML')
+m_arma_log.res = resid(m_arma_log)
+## Residual Analysis
+par (mfrow=c(2,2))
+plot(m_arma_log.res, ylab='Standardized Residuals')
+abline(h=0)
+acf(m_arma_log.res,main= 'ACF of the Model Residuals')
+pacf(m_arma_log.res,main='PACF of the Model Residuals')
+qqnorm(m_arma_log.res)
+qqline(m_arma_log.res)
+```
+The de-trended time series shows that the trend has been removed. the residuals are normally distributed. The ACF and PACF plots
+show also that it is plausible that the de-trended time series is stationary.
+
+
+
+
+## ARIMA modeling m2
+
+```{r}
+n = length(training[,"hosr"])
+norder = 6
+
+aicc <- data.frame(Inf,Inf,Inf,Inf)
+names(aicc) <- c("p","d","q","aicc")
+
+for(p in 1:norder){
+  for(d in 0:1){
+    for(q in 1:norder){
+
+      possibleError <- tryCatch(
+          aicc <- rbind(aicc,test_arima(training[,"hosr"],p,d,q,n)),
+          error = function(e) e
+        )
+        if(inherits(possibleError,"error")) next
+   } 
+  }
+}
+
+aicc <- aicc[order(aicc$aicc),]
+m2.orders = c(aicc$p[1],aicc$d[1],aicc$q[1])
+
+```
+
+
+```{r}
+final_model.2 = arima(training[,"hosr"], order = m2.orders, method = "ML")
+resids.2 = resid(final_model.2)
+## Residual Analysis
+par (mfrow=c(2,2))
+plot(resids.2, ylab='Standardized Residuals')
+abline(h=0)
+acf(resids.2,main= 'ACF of the Model Residuals')
+pacf(resids.2,main='PACF of the Model Residuals')
+qqnorm(resids.2)
+qqline(resids.2)
+```
+
+##  var model org
+
+```{r}
+var_data_train <- cbind(ts_hosr,ts_icsa,ts_mspus,ts_permit)
+var_data_train <- var_data_train[1:(n-15),]
+
+VARselect(var_data_train, lag.max = 20)$selection
+
+```
+
+```{r}
+m_var_org=VAR(var_data_train, p=2)
+summary(m_var_org$varresult$ts_hosr)
+## Model Fitting: Restricted VAR
+m_rs_var_org=restrict(m_var_org)  
+summary(m_rs_var_org$varresult$ts_hosr)
+```
+
+residuals of var
+```{r}
+m_var_org.res = resid(m_var_org)[,"ts_hosr"]
+
+## Residual Analysis
+
+par (mfrow=c(2,2))
+plot(m_var_org.res, ylab='Standardized Residuals')
+abline(h=0)
+acf(m_var_org.res,main= 'ACF of the Model Residuals')
+pacf(m_var_org.res,main='PACF of the Model Residuals')
+qqnorm(m_var_org.res)
+qqline(m_var_org.res)
+
+m_rs_var_org.res = resid(m_rs_var_org)[,"ts_hosr"]
+
+## Residual Analysis
+
+par (mfrow=c(2,2))
+plot(m_rs_var_org.res, ylab='Standardized Residuals')
+abline(h=0)
+acf(m_rs_var_org.res,main= 'ACF of the Model Residuals')
+pacf(m_rs_var_org.res,main='PACF of the Model Residuals')
+qqnorm(m_rs_var_org.res)
+qqline(m_rs_var_org.res)
+```
+The residual is weakly stationary with few bars slightly outside of the significant band and the residual seems to be roughly normally distributed with few points at fat tails.
+
+
+## var model log
+
+```{r}
+var_data_train <- cbind(ts_hosr_log,ts_icsa_log)
+var_data_train <- var_data_train[1:(n-15),]
+
+VARselect(var_data_train, lag.max = 20)$selection
+
+```
+
+```{r}
+m_var_log=VAR(var_data_train, p=2)
+summary(m_var_log$varresult$ts_hosr)
+## Model Fitting: Restricted VAR
+m_rs_var_log=restrict(m_var_log)  
+summary(m_rs_var_log$varresult$ts_hosr)
+```
+
+residuals of var
+```{r}
+m_var_log.res = resid(m_var_log)[,"ts_hosr_log"]
+
+## Residual Analysis
+
+par (mfrow=c(2,2))
+plot(m_var_log.res, ylab='Standardized Residuals')
+abline(h=0)
+acf(m_var_log.res,main= 'ACF of the Model Residuals')
+pacf(m_var_log.res,main='PACF of the Model Residuals')
+qqnorm(m_var_log.res)
+qqline(m_var_log.res)
+
+m_rs_var_log.res = resid(m_rs_var_log)[,"ts_hosr_log"]
+
+## Residual Analysis
+
+par (mfrow=c(2,2))
+plot(m_rs_var_log.res, ylab='Standardized Residuals')
+abline(h=0)
+acf(m_rs_var_log.res,main= 'ACF of the Model Residuals')
+pacf(m_rs_var_log.res,main='PACF of the Model Residuals')
+qqnorm(m_rs_var_log.res)
+qqline(m_rs_var_log.res)
+```
+The residual is weakly stationary with few bars slightly outside of the significant band and the residual seems to be roughly normally distributed with few points at fat tails.
+
+For the restricted model, the residuals fall into few constant values and thus the QQ plots exhibits a zigzag pattern, which is weird
+
+
+
+
+## m4 varx org
 
 ```{r}
 ##Model Selection
-VARselect(cbind(ts_hosr[1:153],ts_permit[1:153]), lag.max = 20,exogen=data.frame(ts_umcsent[1:153],ts_unrate[1:153]))$selection
+VARselect(cbind(ts_hosr[1:153],ts_icsa[1:153]), lag.max = 20,exogen=data.frame(ts_mspus[1:153],ts_permit[1:153]))$selection
 
 ```
 
 ```{r}
 ## Model Fitting: Unrestricted VAR
-model.var2=VAR(cbind(ts_hosr[1:153],ts_permit[1:153]), p=1,exogen=data.frame(umcsent=ts_umcsent[1:153],unrate=ts_unrate[1:153]))
-summary(model.var2)
+m_varx_org=VAR(data.frame(hosr=ts_hosr[1:153],icsa=ts_icsa[1:153]), p=2,exogen=data.frame(mspus=ts_mspus[1:153],permit=ts_permit[1:153]))
+summary(m_varx_org)
 
 ## Model Fitting: Restricted VAR
-model.var.restrict2=restrict(model.var2)  
-summary(model.var.restrict2)
+m_rs_varx_org=restrict(m_varx_org)  
+summary(m_rs_varx_org)
+```
+
+
+residuals of varx
+```{r}
+m_varx_org.res = resid(m_varx_org)[,"hosr"]
+
+## Residual Analysis
+
+par (mfrow=c(2,2))
+plot(m_varx_org.res, ylab='Standardized Residuals')
+abline(h=0)
+acf(m_varx_org.res,main= 'ACF of the Model Residuals')
+pacf(m_varx_org.res,main='PACF of the Model Residuals')
+qqnorm(m_varx_org.res)
+qqline(m_varx_org.res)
+
+m_rs_varx_org.res = resid(m_rs_varx_org)[,"hosr"]
+
+## Residual Analysis
+
+par (mfrow=c(2,2))
+plot(m_rs_varx_org.res, ylab='Standardized Residuals')
+abline(h=0)
+acf(m_rs_varx_org.res,main= 'ACF of the Model Residuals')
+pacf(m_rs_varx_org.res,main='PACF of the Model Residuals')
+qqnorm(m_rs_varx_org.res)
+qqline(m_rs_varx_org.res)
+```
+## varx log not avaliable because y needs two variables
+```{r}
+##Model Selection
+VARselect(cbind(ts_hosr_log[1:153]), lag.max = 20,exogen=data.frame(ts_icsa_log[1:153]))$selection
+
+```
+
+```{r}
+## Model Fitting: Unrestricted VAR
+m_varx_org=VAR(data.frame(hosr=ts_hosr_log[1:153]), p=4,exogen=data.frame(icsa=ts_mspus_log[1:153]))
+summary(m_varx_org)
+
+## Model Fitting: Restricted VAR
+m_rs_varx_org=restrict(m_varx_org)  
+summary(m_rs_varx_org)
 ```
 
 
