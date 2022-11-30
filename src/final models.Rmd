@@ -66,6 +66,92 @@ ts_icsa_log <-ts(hosr_log["ICSA"],start = 1980, freq = 4)
 ts_sp500_log <-ts(hosr_log["SP500"],start = 1980, freq = 4)
 ```
 
+### Benchmark models
+
+# Original data
+
+points <- 1:length(hosr$date)
+points <- (points - min(points))/max(points)
+# 1. Fit a moving average model
+mav_model <- ksmooth(points, hosr$hosr, kernel = "box")
+mav_fit <- ts(mav_model$y, start = 1980, frequency = 4)
+# 2. Fit mean model
+mean_model <- meanf(ts_hosr)
+mean_fit <- ts(mean_model$fitted, start = 1980, frequency = 4)
+# 3. Fit drift model
+drift_model <- rwf(ts_hosr,12,drift=TRUE)
+drift_fit <- ts(drift_model$fitted, start = 1980, frequency = 4)
+# 4. Fit naive model
+naive_model <- naive(ts_hosr,12)
+naive_fit <- ts(naive_model$fitted, start = 1980, frequency = 4)
+
+# Splines Trend Estimation
+gam_model <- gam(ts_hosr~s(points))
+gam_fit <- ts(fitted(gam_model),start=1980,frequency=4)
+
+
+#parametric quadraric polynomial
+x1 = points
+x2 =points^2
+para_model = lm(ts_hosr~x1+x2)
+para_fit = ts(fitted(para_model),start=1980,frequency=4)
+
+
+# plot
+ts.plot(ts_hosr,xlab="",ylab="homeownership rate",main = "Trend Estimation with Benchmark model")
+lines(mav_fit,lwd=2,col="blue")
+lines(mean_fit,lwd=2,col="red")
+lines(drift_fit,lwd=2,col="green")
+lines(naive_fit,lwd=2,col="yellow")
+lines(gam_fit,lwd=2,col="purple")
+lines(para_fit,lwd=2,col="orange")
+legend("topleft", legend = c("mav", "mean", "drift", "naive","Splines regression","parametric quadraric polynomial"),
+col = c("blue", "red", "green", "yellow","purple","orange"), lwd = 2)
+
+
+
+# Log Data
+
+# 1. Fit a moving average model
+mav_model_log <- ksmooth(points, ts_hosr_log, kernel = "box")
+mav_fit_log <- ts(mav_model_log$y, start = 1980, frequency = 4)
+
+# 2. Fit mean model
+mean_model_log <- meanf(ts_hosr_log)
+mean_fit_log <- ts(mean_model_log$fitted, start = 1980, frequency = 4)
+# 3. Fit drift model
+drift_model_log <- rwf(ts_hosr_log,12,drift=TRUE)
+drift_fit_log <- ts(drift_model_log$fitted, start = 1980, frequency = 4)
+# 4. Fit naive model
+naive_model_log <- naive(ts_hosr_log,12)
+naive_fit_log <- ts(naive_model_log$fitted, start = 1980, frequency = 4)
+
+# Splines Trend Estimation
+gam_model_log <- gam(ts_hosr_log~s(points))
+gam_fit_log <- ts(fitted(gam_model_log),start=1980,frequency=4)
+
+
+#parametric quadraric polynomial
+x1 = points
+x2 =points^2
+para_model_log = lm(ts_hosr_log~x1+x2)
+para_fit_log = ts(fitted(para_model_log),start=1980,frequency=4)
+
+
+# plot
+ts.plot(ts_hosr_log,xlab="",ylab="homeownership rate",main = "Trend Estimation with Benchmark model")
+lines(mav_fit_log,lwd=2,col="blue")
+lines(mean_fit_log,lwd=2,col="red")
+lines(drift_fit_log,lwd=2,col="green")
+lines(naive_fit_log,lwd=2,col="yellow")
+lines(gam_fit_log,lwd=2,col="purple")
+lines(para_fit_log,lwd=2,col="orange")
+legend("topleft", legend = c("mav", "mean", "drift", "naive","Splines regression","parametric quadraric polynomial"),
+col = c("blue", "red", "green", "yellow","purple","orange"), lwd = 2)
+```
+
+
+
 ```{r}
 par(mfrow=c(3,2))
 plot(ts_hosr, type="l", main=paste("homeowership rate"),ylab="")
