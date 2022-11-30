@@ -66,6 +66,7 @@ ts_icsa_log <-ts(hosr_log["ICSA"],start = 1980, freq = 4)
 ts_sp500_log <-ts(hosr_log["SP500"],start = 1980, freq = 4)
 ```
 
+```{r}
 ### Benchmark models
 
 # Original data
