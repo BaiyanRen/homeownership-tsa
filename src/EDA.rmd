@@ -23,11 +23,11 @@ library(ggpubr)
 library(corrplot)
 ```
 ```{r}
-hosr_var_fpath <- "~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv"
-hosr_fpath <- "~/Documents/GitHub/homeownership-tsa/data/Homeownership Rate-1.csv"
-ir_fpath <- "~/Documents/GitHub/homeownership-tsa/data/Interest Rate.csv"
-msp_fpath <- "~/Documents/GitHub/homeownership-tsa/data/Median Sales Price of Houses Sold by Quarter.csv"
-gdp_fpath <- "~/Documents/GitHub/homeownership-tsa/data/Real GDP by Quarter.csv"
+hosr_var_fpath <- "data/hosr_var.csv"
+hosr_fpath <- "data/Homeownership Rate-1.csv"
+ir_fpath <- "data/Interest Rate.csv"
+msp_fpath <- "data/Median Sales Price of Houses Sold by Quarter.csv"
+gdp_fpath <- "data/Real GDP by Quarter.csv"
 
 hosr_var_df <- read.csv(hosr_var_fpath)
 hosr_df <- read.csv(hosr_fpath, skip=7)
@@ -53,16 +53,19 @@ p6 <- ggplot(hosr_var_df,aes(date, CPIAUCSL))+geom_line(color='blue') + labs(x =
          labs(title = 'CPI')+theme(plot.title=element_text(face="bold",size=7))
 p7 <- ggplot(hosr_var_df,aes(date, UNRATE))+geom_line(color='blue') + labs(x = "") + labs(y = "UNRATE") +
          labs(title = 'Unemployment Rate')+theme(plot.title=element_text(face="bold",size=7))
-p8 <- ggplot(hosr_var_df,aes(date, DSPIC96))+geom_line(color='blue') + labs(x = "") + labs(y = "DSPIC96") +
+p8 <- ggplot(hosr_var_df,aes(date, UMCSENT))+geom_line(color='blue') + labs(x = "") + labs(y = "UMCSENT") +
+     labs(title = '')+theme(plot.title=element_text(face="bold",size=7))
+p9 <- ggplot(hosr_var_df,aes(date, DSPIC96))+geom_line(color='blue') + labs(x = "") + labs(y = "DSPIC96") +
          labs(title = 'Disposable Personal Income')+theme(plot.title=element_text(face="bold",size=7))
-p9 <- ggplot(hosr_var_df,aes(date, PERMIT))+geom_line(color='blue') + labs(x = "") + labs(y = "PERMIT") +
+p10 <- ggplot(hosr_var_df,aes(date, PERMIT))+geom_line(color='blue') + labs(x = "") + labs(y = "PERMIT") +
          labs(title = 'Housing Permit')+theme(plot.title=element_text(face="bold",size=7))
-p10 <- ggplot(hosr_var_df,aes(date, ICSA))+geom_line(color='blue') + labs(x = "") + labs(y = "ICSA") +
+p11 <- ggplot(hosr_var_df,aes(date, ICSA))+geom_line(color='blue') + labs(x = "") + labs(y = "ICSA") +
          labs(title = 'Inital Claim')+theme(plot.title=element_text(face="bold",size=7))
-p11 <- ggplot(hosr_var_df,aes(date, SP500))+geom_line(color='blue') + labs(x = "") + labs(y = "SP500") +
+p12 <- ggplot(hosr_var_df,aes(date, SP500))+geom_line(color='blue') + labs(x = "") + labs(y = "SP500") +
          labs(title = 'S&P 500 Index')+theme(plot.title=element_text(face="bold",size=7))
 
-ggarrange(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11, ncol=4, nrow = 3)
+
+ggarrange(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11, p12, ncol=4, nrow = 3)
 ```
 
 Type any R code in the chunk, for example:

@@ -7,6 +7,7 @@ output: html_notebook
 setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
 print('Working directory reset to ../project')
 ```
+
 ```{r}
 library(mgcv)
 library(lubridate)
