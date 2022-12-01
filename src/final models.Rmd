@@ -23,9 +23,9 @@ library(lmtest)
 
 read data
 ```{r}
-# hosr <- read.csv("~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv")
-setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
-hosr <- read.csv("data/hosr_var.csv")
+hosr <- read.csv("~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv")
+#setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
+#hosr <- read.csv("data/hosr_var.csv")
 n <- length(hosr$hosr)
 hosr_log <- log(subset(hosr,select = -c(year,date,quarter)))
 
@@ -453,9 +453,10 @@ summary(ur.df(co.resid.icsa, type="trend",selectlags="BIC"))
 # co.resid.unrate <- ts_hosr-(coef.unrate[2]*ts_unrate+coef.unrate[1])
 # summary(ur.df(co.resid.unrate, type="none",selectlags="BIC"))
 # summary(ur.df(co.resid.unrate, type="drift",selectlags="BIC"))
-# summary(ur.df(co.resid.unrate, type="trend",selectlags="BIC"))
+# summary(ur.df(co.resid.unrate, type="trend",selectlags="BIC"))```
 ```
 cointegration-By Baiyan
+
 ```{r}
 # original data - returns the same results as above
 lm.mspus <- lm(ts_hosr~ts_mspus)
@@ -498,7 +499,7 @@ time.pts = c(1:length(hosr[,"hosr"]))
 time.pts = c(time.pts - min(time.pts))/max(time.pts)
 x <- time.pts[1:153]
 m_spl_org = gam(training[,"hosr"]~s(x))
-m_spl_org.fit = fitted(m_spl_arma_org)
+m_spl_org.fit = fitted(m_spl_org)
 m_spl_org.fit = ts(m_spl_org.fit,start=1980, freq=4)
 resid.process = training[,"hosr"]-m_spl_org.fit
 resid.process = ts(resid.process,start=1980, freq=4)
@@ -536,7 +537,6 @@ for(p in 1:norder){
 
 aicc <- aicc[order(aicc$aicc),]
 m1.orders = c(aicc$p[1],aicc$d[1],aicc$q[1])
-
 ```
 
 fit ARMA model
@@ -555,6 +555,7 @@ qqline(m_arma_org.res)
 ```
 The de-trended time series shows that the trend has been removed. the residuals are normally distributed. The ACF and PACF plots
 show also that it is plausible that the de-trended time series is stationary.
+
 
 
 trend estimation and ARMA log
@@ -600,7 +601,6 @@ for(p in 1:norder){
 
 aicc <- aicc[order(aicc$aicc),]
 m1.orders = c(aicc$p[1],aicc$d[1],aicc$q[1])
-
 ```
 
 fit ARMA model log
@@ -813,7 +813,7 @@ For the restricted model, the residuals fall into few constant values and thus t
 
 
 
-## m4 varx org
+##  varx org
 
 ```{r}
 ##Model Selection
@@ -857,22 +857,6 @@ acf(m_rs_varx_org.res,main= 'ACF of the Model Residuals')
 pacf(m_rs_varx_org.res,main='PACF of the Model Residuals')
 qqnorm(m_rs_varx_org.res)
 qqline(m_rs_varx_org.res)
-```
-## varx log not avaliable because y needs two variables
-```{r}
-##Model Selection
-VARselect(cbind(ts_hosr_log[1:153]), lag.max = 20,exogen=data.frame(ts_icsa_log[1:153]))$selection
-
-```
-
-```{r}
-## Model Fitting: Unrestricted VAR
-m_varx_org=VAR(data.frame(hosr=ts_hosr_log[1:153]), p=4,exogen=data.frame(icsa=ts_mspus_log[1:153]))
-summary(m_varx_org)
-
-## Model Fitting: Restricted VAR
-m_rs_varx_org=restrict(m_varx_org)  
-summary(m_rs_varx_org)
 ```
 
 ## ARIMAX on original data
@@ -936,21 +920,48 @@ Box.test(m_arimax_log$resid, lag = 4, type = "Ljung-Box", fitdf = 4)
 
 ## prediction
 
-m1
+gam+arma org
 ```{r}
-nfit = 153
-
+n = length(time.pts)
+nfit=n-15
 newdata = data.frame(x=time.pts[(nfit+1):n])
-gam.pred= predict(gam.fit.tr,newdata = newdata,interval=c("prediction"))
-
-outpredresid = predict(final_model.1,n.ahead=15)$pred
+gam.pred= predict(m_spl_org,newdata = newdata,interval=c("prediction"))
+outpredresid = predict(m_arma_org,n.ahead=15)$pred
 ## Add up the predictions
-final.pred.1 = outpredresid+gam.pred
+m_gam_arma_org.pred = outpredresid+gam.pred
 ```
 
-m2
+gam+arma log
 ```{r}
-final.pred.2 = predict(final_model.2,n.ahead=15)$pred
+n = length(time.pts)
+nfit=n-15
+newdata = data.frame(x=time.pts[(nfit+1):n])
+gam.pred= predict(m_spl_log,newdata = newdata,interval=c("prediction"))
+outpredresid = predict(m_arma_log,n.ahead=15)$pred
+## Add up the predictions
+m_gam_arma_log.pred = exp(outpredresid+gam.pred)
+```
+
+var model org
+
+```{r}
+m_var_org.pred = predict(m_var_org,n.ahead=15)$fcst$ts_hosr[,1]
+m_rs_var_org.pred = predict(m_rs_var_org,n.ahead=15)$fcst$ts_hosr[,1]
+```
+
+var model log
+
+```{r}
+m_var_log.pred = exp(predict(m_var_log,n.ahead=15)$fcst$ts_hosr[,1])
+m_rs_var_log.pred = exp(predict(m_rs_var_log,n.ahead=15)$fcst$ts_hosr[,1])
+```
+
+varx model org
+
+```{r}
+x = data.frame(mspus=ts_mspus[154:168],permit=ts_permit[154:168])
+m_varx_org.pred = predict(m_varx_org,n.ahead=15,dumvar=x)$fcst$hosr[,1]
+m_rs_varx_org.pred = predict(m_rs_varx_org,n.ahead=15,dumvar=x)$fcst$hosr[,1]
 ```
 
 ARIMA
@@ -967,13 +978,6 @@ m_arima_log_pred.ubound = exp(m_arima_log_pred$pred+1.96*m_arima_log_pred$se)
 m_arima_log_pred.lbound = exp(m_arima_log_pred$pred-1.96*m_arima_log_pred$se)
 ```
 
-m4
-
-```{r}
-x = data.frame(umcsent=ts_umcsent[154:168],unrate=ts_unrate[154:168])
-final.pred.4a = predict(model.var2,n.ahead=15,dumvar=x)$fcst$y1
-final.pred.4b = predict(model.var.restrict2,n.ahead=15,dumvar=x)$fcst$y1
-```
 
 ARIMAX
 ```{r}
