@@ -670,8 +670,11 @@ m_arima_ori.res = resid(m_arima_ori)
 par (mfrow=c(2,2))
 plot(m_arima_ori.res, ylab='Standardized Residuals')
 abline(h=0)
-acf(m_arima_ori.res,main= 'ACF of the Model Residuals')
-pacf(m_arima_ori.res,main='PACF of the Model Residuals')
+acf(m_arima_ori.res,main= 'ACF of Ori ARIMA Model Residuals')
+pacf(m_arima_ori.res,main='PACF of Ori ARIMA Model Residuals')
+acf(m_arima_ori.res^2,main= 'ACF of Ori ARIMA Model Residuals Squared')
+pacf(m_arima_ori.res^2,main='PACF of Ori ARIMA Model Residuals Squared')
+
 qqnorm(m_arima_ori.res)
 qqline(m_arima_ori.res)
 
@@ -711,8 +714,12 @@ m_arima_log.res = resid(m_arima_log)
 par (mfrow=c(2,2))
 plot(m_arima_log.res, ylab='Standardized Residuals')
 abline(h=0)
-acf(m_arima_log.res,main= 'ACF of the Model Residuals')
-pacf(m_arima_log.res,main='PACF of the Model Residuals')
+
+acf(m_arima_log.res,main= 'ACF of Log ARIMA Model Residuals')
+pacf(m_arima_log.res,main='PACF of Log ARIMA Model Residuals')
+acf(m_arima_log.res^2,main= 'ACF of Log ARIMA Model Residuals Sqaured')
+pacf(m_arima_log.res^2,main='PACF of Log ARIMA Model Residuals Sqaured')
+
 qqnorm(m_arima_log.res)
 qqline(m_arima_log.res)
 
