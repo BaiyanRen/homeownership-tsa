@@ -1,6 +1,6 @@
 ---
-title: "dynamic regression"
-author: "Leon Chen"
+title: "final project tsa"
+team 4: "Leon Chen","Baiyan Ren","Qianqian Zhou"
 date: "11/12/2022"
 output: html_document
 ---
@@ -168,6 +168,7 @@ plot(ts_dispic, type="l", main=paste("Disposible income"),ylab="")
 plot(ts_permit, type="l", main=paste("Housing permit"),ylab="")
 plot(ts_icsa, type="l", main=paste("Jobless claim"),ylab="")
 plot(ts_sp500, type="l", main=paste("S&P 500"),ylab="")
+
 ```
 Housing permit and consumer sentiment seems to have a very similar pattern as the home ownership rate, while interest rate might exhibit negative relationship with homeowership rate. Log transformation might be needed variables like Non farm payroll, median housing price for them to show more clear correlation with the target.
 
@@ -221,6 +222,7 @@ summary(model.var$varresult$ts_hosr)
 ## Model Fitting: Restricted VAR
 model.var.restrict=restrict(model.var)  
 summary(model.var.restrict$varresult$ts_hosr)
+
 ```
 
 ```{r}
@@ -282,6 +284,7 @@ granger causality test on log
 var_data <- cbind(ts_hosr_log,ts_cpi_log,ts_dispic_log,ts_fedfunds_log,ts_gdp_log,
                   ts_icsa_log,ts_mspus_log,ts_payem_log,ts_permit_log,ts_sp500_log,ts_umcsent_log,ts_unrate_log)
 VARselect(var_data, lag.max = 21)$selection
+
 ```
 
 ```{r}
@@ -490,6 +493,7 @@ summary(ur.df(residuals(lm.permit_log), type="trend", selectlags="BIC"))
 summary(ur.df(residuals(lm.icsa_log), type="none", selectlags="BIC"))
 summary(ur.df(residuals(lm.icsa_log), type="drift", selectlags="BIC"))
 summary(ur.df(residuals(lm.icsa_log), type="trend", selectlags="BIC"))
+
 ```
 
 Trend Estimation + ARMA org
@@ -509,6 +513,7 @@ lines(m_spl_org.fit,lwd=2,col="blue")
 plot(resid.process,xlab="Years",ylab="De-Trended Time Series",type="l")
 acf(resid.process,main="ACF: De-trended TS")
 pacf(resid.process,main="PACF: De-trended TS")
+
 ```
 ## order selection  ---AICC
 
@@ -1009,9 +1014,9 @@ m_arimax_ori_pred.pred = data.frame(m_arimax_ori_pred)[,"Point.Forecast"]
 m_arimax_ori_pred.ubound = data.frame(m_arimax_ori_pred)[, "Hi.95"]
 m_arimax_ori_pred.lbound = data.frame(m_arimax_ori_pred)[, "Lo.95"]
 
-m_arimax_log_pred.pred = data.frame(m_arimax_log_pred)[,"Point.Forecast"]
-m_arimax_log_pred.ubound = data.frame(m_arimax_log_pred)[, "Hi.95"]
-m_arimax_log_pred.lbound = data.frame(m_arimax_log_pred)[, "Lo.95"]
+m_arimax_log_pred.pred = exp(data.frame(m_arimax_log_pred)[,"Point.Forecast"])
+m_arimax_log_pred.ubound = exp(data.frame(m_arimax_log_pred)[, "Hi.95"])
+m_arimax_log_pred.lbound = exp(data.frame(m_arimax_log_pred)[, "Lo.95"])
 ```
 
 ## plot
@@ -1032,7 +1037,7 @@ lines(ts(m_arima_log_pred.pred,start=2018.25,freq=4),lwd=2,col="grey")
 lines(ts(m_arimax_ori_pred.pred,start=2018.25,freq=4),lwd=2,col="darkblue")
 lines(ts(m_arimax_log_pred.pred,start=2018.25,freq=4),lwd=2,col="darkred")
 legend(x=1980,y=69,legend=c("gam_arma_o","gam_arma_l","var_o","rs_var_o","var_l","rs_var_l","varx_o","rs_varx_o","arima_o","arima_l","arimax_o","arimax_l"),pch=1,
-       pt.lwd = 2, col=c("red","orange","blue","lightblue","green","darkgreen","pink","yellow","grey","darkblue","darkred"))
+       pt.lwd = 2, col=c("red","orange","blue","lightblue","darkgreen","green","lightgreen","pink","yellow","grey","darkblue","darkred"))
 
 
 ## Individual Plots
@@ -1042,7 +1047,7 @@ par(mfrow=c(3, 2))
 ts.plot(ts_hosr,main="Org Forecast:spline Trend + ARMA",ylab="homeownership rate",ylim=c(62,69))
 lines(ts(m_gam_arma_org.pred,start=2018.25,freq=4),lwd=2,col="red")
 lines(ts(m_gam_arma_org.ubound,start=2018.25,freq=4),lwd=3,col="blue")
-lines(ts(m_gam_arma_org,lbound,start=2018.25,freq=4),lwd=3,col="blue")
+lines(ts(m_gam_arma_org.lbound,start=2018.25,freq=4),lwd=3,col="blue")
 
 ts.plot(ts_hosr,main="Log Forecast:spline Trend + ARMA",ylab="homeownership rate",ylim=c(62,69))
 lines(ts(m_gam_arma_log.pred,start=2018.25,freq=4),lwd=2,col="green")
@@ -1102,38 +1107,29 @@ lines(ts(m_arimax_ori_pred.ubound,start=2018.25,freq=4),lwd=2,col="blue")
 lines(ts(m_arimax_ori_pred.lbound,start=2018.25,freq=4),lwd=2,col="blue")
 
 ts.plot(ts_hosr,main="Log Forecasts:ARIMAX",ylab="homeownership rate",ylim=c(62,69))
-lines(ts(exp(m_arimax_log_pred.pred),start=2018.25,freq=4),lwd=3,col="green")
-lines(ts(exp(m_arimax_log_pred.ubound),start=2018.25,freq=4),lwd=3,col="blue")
-lines(ts(exp(m_arimax_log_pred.lbound),start=2018.25,freq=4),lwd=3,col="blue")
+lines(ts(m_arimax_log_pred.pred,start=2018.25,freq=4),lwd=3,col="green")
+lines(ts(m_arimax_log_pred.ubound,start=2018.25,freq=4),lwd=3,col="blue")
+lines(ts(m_arimax_log_pred.lbound,start=2018.25,freq=4),lwd=3,col="blue")
 
-
-
-
-
-
-## Backup
-ts.plot(ts_hosr,main="All Forecasts",ylab="homeownership rate",ylim=c(62,69))
-points(ts(m_gam_arma_org.pred,start=2018.25,freq=4),lwd=2,col="red")
-points(ts(m_gam_arma_log.pred,start=2018.25,freq=4),lwd=2,col="orange")
-points(ts(m_var_org.pred,start=2018.25,freq=4),lwd=2,col="blue")
-points(ts(m_rs_var_org.pred,start=2018.25,freq=4),lwd=2,col="lightblue")
-points(ts(m_var_log.pred,start=2018.25,freq=4),lwd=2,col="darkgreen")
-points(ts(m_rs_var_log.pred,start=2018.25,freq=4),lwd=2,col="green")
-points(ts(m_varx_org.pred,start=2018.25,freq=4),lwd=2,col="lightgreen")
-points(ts(m_rs_varx_org.pred,start=2018.25,freq=4),lwd=2,col="pink")
-points(ts(m_arima_ori_pred.pred,start=2018.25,freq=4),lwd=2,col="yellow")
-points(ts(m_arima_ori_pred.pred,start=2018.25,freq=4),lwd=2,col="grey")
-points(ts(m_arima_log_pred.pred,start=2018.25,freq=4),lwd=2,col="darkblue")
-points(ts(m_arima_log_pred.pred,start=2018.25,freq=4),lwd=2,col="darkred")
-#legend(x=1980,y=69,legend=c("model1","model2","model3a","model3b","model4a","model4b"),pch=1,
-#       pt.lwd = 2, col=c("red","orange","blue","lightblue","darkgreen","green"))
 ```
+```{r}
+##ARIMAX
+ts.plot(ts_hosr,main="Ori Forecasts:ARIMAX",ylab="homeownership rate",ylim=c(62,69))
+lines(ts(m_arimax_ori_pred.pred,start=2018.25,freq=4),lwd=2,col="red")
+lines(ts(m_arimax_ori_pred.ubound,start=2018.25,freq=4),lwd=2,col="blue")
+lines(ts(m_arimax_ori_pred.lbound,start=2018.25,freq=4),lwd=2,col="blue")
 
+##VAR Log
+ts.plot(ts_hosr,main="Log Forecast:Unrestrict VAR",ylab="homeownership rate",ylim=c(62,69))
+lines(ts(m_var_log.pred,start=2018.25,freq=4),lwd=2,col="red")
+lines(ts(m_var_log.pred.lbound,start=2018.25,freq=4),lwd=3,col="blue")
+lines(ts(m_var_log.pred.ubound,start=2018.25,freq=4),lwd=3,col="blue")
+```
 
 PM, MAPE
 
 ```{r}
-testing$hosr
+
 cat("\ngam_arma_org MAPE:",mean(abs(m_gam_arma_org.pred-testing$hosr)/testing$hosr),
     "\ngam_arma_org PM:",sum((m_gam_arma_org.pred-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2),
     "\ngam_arma_log MAPE:",mean(abs(m_gam_arma_log.pred-testing$hosr)/testing$hosr),
@@ -1150,15 +1146,15 @@ cat("\ngam_arma_org MAPE:",mean(abs(m_gam_arma_org.pred-testing$hosr)/testing$ho
     "\nm_varx_org PM:",sum((m_varx_org.pred-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2),
     "\nm_rs_varx_org MAPE:",mean(abs(m_rs_varx_org.pred-testing$hosr)/testing$hosr),
     "\nm_rs_varx_org PM:",sum((m_rs_varx_org.pred-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2),
-    "\nm_arima_ori MAPE:",mean(abs((m_arima_ori_pred.pred$hosr)/testing$hosr),
-    "\nm_arima_ori PM:",sum(((m_arima_ori_pred.pred.pred-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2),
-    "\nm_arima_log MAPE:",mean(abs((m_arima_log_pred.pred$hosr)/testing$hosr),
-    "\nm_arima_log PM:",sum(((m_arima_log_pred.pred.pred-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2),
-    "\nm_arimax_ori MAPE:",mean(abs((m_arimax_ori_pred.pred$hosr)/testing$hosr),
-    "\nm_arimax_ori PM:",sum(((m_arimax_ori_pred.pred.pred-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2),
-    "\nm_arimax_log MAPE:",mean(abs((m_arimax_log_pred.pred$hosr)/testing$hosr),
-    "\nm_arimax_log PM:",sum(((m_arimax_log_pred.pred.pred-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2))
-   
+    "\nm_arima_ori MAPE:",mean(abs((m_arima_ori_pred.pred)/testing$hosr)),
+    "\nm_arima_ori PM:",sum(((m_arima_ori_pred.pred-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2)),
+    "\nm_arima_log MAPE:",mean(abs((m_arima_log_pred.pred)/testing$hosr)),
+    "\nm_arima_log PM:",sum(((m_arima_log_pred.pred-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2)),
+    "\nm_arimax_ori MAPE:",mean(abs((m_arimax_ori_pred.pred)/testing$hosr)),
+    "\nm_arimax_ori PM:",sum(((m_arimax_ori_pred.pred-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2)),
+    "\nm_arimax_log MAPE:",mean(abs((m_arimax_log_pred.pred)/testing$hosr)),
+    "\nm_arimax_log PM:",sum(((m_arimax_log_pred.pred-testing$hosr)^2)/sum((testing$hosr-mean(testing$hosr))^2)))
+    
 ```
 
 
