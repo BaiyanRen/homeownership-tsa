@@ -794,12 +794,16 @@ m_var_log.res = resid(m_var_log)[,"ts_hosr_log"]
 par (mfrow=c(2,2))
 plot(m_var_log.res, ylab='Standardized Residuals')
 abline(h=0)
-acf(m_var_log.res,main= 'ACF of the Model Residuals')
-pacf(m_var_log.res,main='PACF of the Model Residuals')
+acf(m_var_log.res,main= 'ACF of VAR log Residuals')
+pacf(m_var_log.res,main='PACF of VAR log Residuals')
 qqnorm(m_var_log.res)
 qqline(m_var_log.res)
 
 m_rs_var_log.res = resid(m_rs_var_log)[,"ts_hosr_log"]
+
+arch.test(m_var_log)
+normality.test(m_var_log)
+serial.test(m_var_log)
 
 ## Residual Analysis
 
