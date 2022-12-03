@@ -5,13 +5,13 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-<<<<<<< HEAD
-setwd("~/Documents/GitHub/homeownership-tsa")
-=======
+
+# setwd("~/Documents/GitHub/homeownership-tsa")
+
 knitr::opts_chunk$set(fig.width = 8, fig.height = 4)
 # change the line of code below to be the location of the repo in your computer to run the file
-setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
->>>>>>> ab337b6c70924810cf61a2fb0a0b36266a14d929
+# setwd("C:/Users/emrqyw7/OneDrive - McKesson Corporation/Training/OMSCS/tsa/tsa_code/project")
+
 ```
 ```{r}
 library(mgcv)
@@ -23,18 +23,11 @@ library(ggpubr)
 library(corrplot)
 ```
 ```{r}
-hosr_var_fpath <- "data/hosr_var.csv"
-hosr_fpath <- "data/Homeownership Rate-1.csv"
-ir_fpath <- "data/Interest Rate.csv"
-msp_fpath <- "data/Median Sales Price of Houses Sold by Quarter.csv"
-gdp_fpath <- "data/Real GDP by Quarter.csv"
-
-hosr_var_df <- read.csv(hosr_var_fpath)
-hosr_df <- read.csv(hosr_fpath, skip=7)
-ir_df <- read.csv(ir_fpath)
-msp_df <- read.csv(msp_fpath)
-gdp_df <- read.csv(gdp_fpath)
-
+hosr_var_df <- read.csv("~/Documents/GitHub/homeownership-tsa/data/hosr_var.csv")
+hosr_df <- read.csv("~/Documents/GitHub/homeownership-tsa/data/Homeownership Rate-1.csv", skip=7)
+ir_df <- read.csv("~/Documents/GitHub/homeownership-tsa/data/Interest Rate.csv")
+msp_df <- read.csv("~/Documents/GitHub/homeownership-tsa/data/Median Sales Price of Houses Sold by Quarter.csv")
+gdp_df <- read.csv("~/Documents/GitHub/homeownership-tsa/data/Real GDP by Quarter.csv")
 hosr_df <- na.omit(hosr_df)
 ```
 ```{r}
